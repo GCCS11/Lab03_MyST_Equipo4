@@ -7,8 +7,13 @@ import numpy as np
 SEED = 42
 
 ROOT_DIR = Path(__file__).resolve().parent
+DATA_DIR = ROOT_DIR / "data"
+PRICES_FILE = DATA_DIR / "raw" / "prices.csv"
 ARTIFACTS_DIR = ROOT_DIR / "artifacts"
 DOCS_DIR = ROOT_DIR / "docs"
+
+START_DATE = "2014-01-01"
+END_DATE = "2026-10-29"
 
 INITIAL_CAPITAL = 1_000_000
 POSITION_FRACTION = 0.80
