@@ -70,7 +70,7 @@ Las propuestas del 4-nov:
 | J7 | `main.py` con `run_pipeline`, que escribe `artifacts/` | vie 6 | Pendiente |
 | J8 | Una sola corrida de prueba y validación con θ congelado | vie 6, noche | Pendiente |
 | J9 | Prueba 1 (causalidad) | sáb 7 | Pendiente |
-| J10 | `dashboard/app.py` con vista ejecutiva y técnica; exportación y guía en `docs/` | sáb 7 | Pendiente |
+| J10 | `dashboard/app.py` con vista ejecutiva y técnica; exportación y guía en `docs/` | sáb 7 | En curso (PR #4): las dos vistas, la exportación y la guía del README funcionan con artifacts sintéticos (7 pruebas). Falta correrlo con los artifacts reales de `main.py` (J7) y generar `docs/dashboard.html` |
 | J11 | Sección del reporte y figuras 2 y 6 | sáb 7 | Pendiente |
 | J12 | README final con el uso de IA de los tres, y el postmortem | dom 8 | Pendiente |
 
