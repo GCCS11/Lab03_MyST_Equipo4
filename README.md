@@ -52,9 +52,41 @@ PENDIENTE: duración de la corrida completa y lista de lo que escribe en `artifa
 ```bash
 streamlit run dashboard/app.py
 ```
-Lee los archivos de `artifacts/` y no vuelve a correr el backtest.
+Lee los archivos de `artifacts/` y no vuelve a correr el backtest. Si falta un archivo, el panel correspondiente lo dice y pide correr `python main.py`.
 
-PENDIENTE: guía de uso de una página, con la vista ejecutiva y la vista técnica.
+Para tener una copia estática que se abre sin Streamlit:
+```bash
+python -m dashboard.export   # escribe docs/dashboard.html
+```
+
+### Guía de uso
+**Controles (fila de arriba).** Aplican a todas las gráficas y a la bitácora.
+- **Vista:** cambia entre la vista ejecutiva y la técnica.
+- **Particiones:** elige qué tramos mostrar: entrenamiento, prueba o validación.
+
+En cada gráfica:
+- Arrastra para hacer zoom; doble clic para regresar.
+- Pasa el cursor para ver los valores.
+- Da clic en la leyenda para ocultar o mostrar una serie.
+- **Ver datos** abre la tabla con los valores de esa gráfica.
+
+**Vista ejecutiva** (para el portfolio manager):
+1. **Tarjeta de desempeño:** Sharpe, Sortino, Calmar, drawdown máximo, win rate, profit factor, retorno total y número de operaciones de la partición elegida. *Todas las particiones* las compara lado a lado.
+2. **Curva de capital y drawdown:** el capital arriba y el drawdown abajo, con el mismo eje de tiempo. Las líneas verticales marcan dónde empiezan la prueba y la validación.
+3. **Atribución de costos:** cómo el P&L bruto se convierte en P&L neto después de comisiones y préstamo.
+4. **Retornos por operación:** histograma con la normal ajustada encima.
+5. **Bitácora de operaciones:** se filtra por dirección (spread largo o corto) y por resultado (ganadora o perdedora).
+
+**Vista técnica** (para el investigador cuantitativo o el gestor de riesgos):
+1. **Spread S_t:** incluye la media que estima el Filtro 2. Las entradas largas (▲), las cortas (▼) y las salidas (✕) se distinguen por forma y por color.
+2. **z-score con umbrales:** muestra los niveles ±z_in, ±z_out y ±z_stop.
+3. **Pesos β̂_t del Filtro 1:** una línea por activo. La pata normalizada vale 1 y no se grafica.
+4. **Primer eigenvector de Johansen móvil:** con la misma normalización que los pesos.
+5. **Ganancia de Kalman de cada filtro:** indica qué tan rápido aprende el filtro.
+6. **Varianza posterior de cada filtro:** en escala logarítmica; muestra la convergencia.
+7. **Sharpe móvil de 252 días:** cubre toda la muestra.
+
+Cada activo conserva su color en todas las gráficas. La paleta pasó las pruebas de daltonismo y contraste en modo claro y oscuro.
 
 ## Estructura
 ```
