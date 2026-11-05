@@ -4,6 +4,8 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from strategy.weights import align_betas
+
 
 @dataclass(frozen=True)
 class VecmFit:
@@ -94,15 +96,6 @@ def equilibrium_deviation(log_prices, betas, c=0.0):
     column per ticker, named as the ticker or as `beta_<ticker>` (the Filter 1 output). For a
     causal signal pass the prior weights beta_{t|t-1}, known before seeing P_t.
     """
-    if isinstance(betas, pd.DataFrame):
-        weights = betas.rename(columns=lambda col: col.removeprefix("beta_"))
-        missing = sorted(set(log_prices.columns) - set(weights.columns))
-        if missing:
-            raise ValueError(f"no weights for {missing}")
-        weights = weights[log_prices.columns].reindex(log_prices.index)
-        values = (log_prices * weights).sum(axis=1, min_count=log_prices.shape[1])
-    else:
-        values = pd.Series(
-            log_prices.to_numpy() @ np.asarray(betas, dtype=float), index=log_prices.index
-        )
+    weights = align_betas(betas, list(log_prices.columns), log_prices.index)
+    values = (log_prices * weights).sum(axis=1, min_count=log_prices.shape[1])
     return (values - c).rename("equilibrium_deviation")
