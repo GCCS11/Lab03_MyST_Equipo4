@@ -21,7 +21,7 @@ def assert_white_with_unit_variance(innov_norm):
 
 
 def signal_params(q=1e-7, r=1e-4, phi=0.0, lam=0.97, burn_in=BURN_IN):
-    return {"Q": q, "phi": phi, "lam": lam, "mu0": 0.0, "R0": r, "burn_in": burn_in}
+    return {"Q": q, "R": r, "phi": phi, "lam": lam, "mu0": 0.0, "burn_in": burn_in}
 
 
 def test_filter_1_innovations_are_white_when_data_follow_the_model():
@@ -69,19 +69,26 @@ def test_filter_1_first_step_matches_hand_calculation():
     assert frame["beta_B"].iloc[2] == pytest.approx(-0.5 - 0.2 / 3)
 
 
-def test_filter_2_first_step_matches_hand_calculation():
-    spread = pd.Series([0.0, 2.0, 2.0])
-    frame = run_signal_filter(spread, {"Q": 0.01, "phi": 0.0, "lam": 0.9, "mu0": 0.0, "R0": 1.0})
-    assert frame["z"].iloc[1] == pytest.approx(2.0)
-    assert frame["innov_var"].iloc[1] == pytest.approx(1.02)
-    assert frame["gain"].iloc[1] == pytest.approx(0.02 / 1.02)
-    assert frame["mu_prior"].iloc[2] == pytest.approx(2 * 0.02 / 1.02)
-    assert frame["sigma_prior"].iloc[2] == pytest.approx(np.sqrt(1.3))
+def test_filter_2_reproduces_the_worked_example_of_s13_p21():
+    spread = pd.Series([0.0, 0.020, 0.060, 0.115, 0.130, 0.070, 0.015, 0.0])
+    params = {"Q": 1e-5, "R": 2.5e-3, "phi": 0.0, "lam": None, "mu0": 0.0, "P0": 4e-4}
+    frame = run_signal_filter(spread, params).iloc[1:]
+    np.testing.assert_allclose(
+        frame["mu_prior"], [0.0, 0.0028, 0.0101, 0.0222, 0.0337, 0.0373, 0.0352], atol=1e-4
+    )
+    np.testing.assert_allclose(
+        frame["sigma_prior"].iloc[:6], [0.0539, 0.0535, 0.0532, 0.0529, 0.0527, 0.0525], atol=1e-4
+    )
+    np.testing.assert_allclose(frame["z"].iloc[:6], [0.37, 1.07, 1.97, 2.04, 0.69, -0.42], atol=0.01)
+    np.testing.assert_allclose(
+        frame["gain"].iloc[:6], [0.141, 0.127, 0.115, 0.107, 0.100, 0.094], atol=1e-3
+    )
 
 
-def test_posterior_z_shrinks_by_one_minus_the_gain_in_the_local_level():
+@pytest.mark.parametrize("lam", [None, 0.97])
+def test_posterior_z_shrinks_by_one_minus_the_gain_in_the_local_level(lam):
     spread = simulate_signal_model()
-    frame = run_signal_filter(spread, signal_params(q=1e-5, burn_in=0))
+    frame = run_signal_filter(spread, signal_params(q=1e-5, lam=lam, burn_in=0))
     posterior_mean = frame["mu_prior"].shift(-1)
     z_posterior = (spread - posterior_mean) / frame["sigma_prior"]
     expected = (1 - frame["gain"]) * frame["z"]

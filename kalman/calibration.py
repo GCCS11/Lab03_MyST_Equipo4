@@ -51,16 +51,17 @@ def calibrate_weights_filter(train_log_prices, beta0, leg, q_ratio=0.0, use_ar1=
 
 
 def calibrate_signal_filter(train_spread, q_ratio=0.0, lam=DEFAULT_LAMBDA, burn_in=DEFAULT_BURN_IN, use_ar1=False):
-    """Regresa Q, phi, lam, mu0, R0 y burn_in del filtro 2, con Q = q_ratio * R0.
+    """Regresa Q, R, phi, lam, mu0 y burn_in del filtro 2, con Q = q_ratio * R.
 
-    Por omision es el nivel local (phi = 0): mu0 y R0 son la media y la varianza del spread.
+    Por omision es el nivel local (phi = 0): mu0 y R son la media y la varianza del spread.
+    Con lam=None la escala del z es la implicita en el modelo (S13 p21).
     """
     if use_ar1:
-        phi, mu0, r0 = fit_ar1(train_spread)
+        phi, mu0, r = fit_ar1(train_spread)
     else:
         values = np.asarray(train_spread, dtype=float)
-        phi, mu0, r0 = 0.0, float(values.mean()), float(values.var(ddof=1))
-    return {"Q": q_ratio * r0, "phi": phi, "lam": lam, "mu0": mu0, "R0": r0, "burn_in": burn_in}
+        phi, mu0, r = 0.0, float(values.mean()), float(values.var(ddof=1))
+    return {"Q": q_ratio * r, "R": r, "phi": phi, "lam": lam, "mu0": mu0, "burn_in": burn_in}
 
 
 def weights_q_table(train_log_prices, beta0, leg, ratios=Q_RATIOS, use_ar1=True, burn_in=DEFAULT_BURN_IN):
