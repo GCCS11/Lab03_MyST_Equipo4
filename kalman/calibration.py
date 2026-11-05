@@ -1,4 +1,8 @@
-"""Parametros de ambos filtros, estimados unicamente con la particion de entrenamiento."""
+"""Parametros de ambos filtros, estimados unicamente con la particion de entrenamiento.
+
+P0 sale de una pasada previa sobre los mismos datos: la varianza con la que termina. Si P0 = Q,
+P_t tarda anios en asentarse y el burn-in no cumpliria su funcion (S13 p16).
+"""
 import numpy as np
 import pandas as pd
 
@@ -49,7 +53,11 @@ def calibrate_weights_filter(train_log_prices, beta0, leg, q_ratio=0.0, use_ar1=
     else:
         phi, c, r = 0.0, float(spread.mean()), float(spread.var(ddof=1))
     params = {"Q": q_ratio * r, "R": r, "phi": phi, "c": c}
-    return {**params, "Q_c": params["Q"]} if state_intercept else params
+    if state_intercept:
+        params["Q_c"] = params["Q"]
+    frame = run_weights_filter(train_log_prices, beta0, leg, params)
+    params["P0"] = float(frame.filter(like="pvar_").iloc[-1].mean())
+    return params
 
 
 def calibrate_signal_filter(train_spread, q_ratio=0.0, lam=DEFAULT_LAMBDA, burn_in=DEFAULT_BURN_IN, use_ar1=False):
@@ -63,7 +71,9 @@ def calibrate_signal_filter(train_spread, q_ratio=0.0, lam=DEFAULT_LAMBDA, burn_
     else:
         values = np.asarray(train_spread, dtype=float)
         phi, mu0, r = 0.0, float(values.mean()), float(values.var(ddof=1))
-    return {"Q": q_ratio * r, "R": r, "phi": phi, "lam": lam, "mu0": mu0, "burn_in": burn_in}
+    params = {"Q": q_ratio * r, "R": r, "phi": phi, "lam": lam, "mu0": mu0, "burn_in": burn_in}
+    params["P0"] = float(run_signal_filter(train_spread, params)["pvar"].iloc[-1])
+    return params
 
 
 def weights_q_table(train_log_prices, beta0, leg, ratios=Q_RATIOS, use_ar1=True, state_intercept=False, burn_in=DEFAULT_BURN_IN):

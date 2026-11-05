@@ -152,6 +152,18 @@ def test_calibration_recovers_static_filter_when_q_is_zero(use_ar1):
     assert params["phi"] == (pytest.approx(0.95, abs=0.02) if use_ar1 else 0.0)
 
 
+def test_calibrated_initial_variance_is_settled_before_the_burn_in_ends():
+    log_prices, _, truth = simulate_weights_model()
+    ratio = truth["Q"] / truth["R"]
+    first = run_weights_filter(log_prices, BETA0, LEG, calibrate_weights_filter(log_prices, BETA0, LEG, ratio))
+    variances = first["pvar_A2"]
+    assert variances.iloc[BURN_IN] == pytest.approx(variances.iloc[-1], rel=0.5)
+
+    spread = simulate_signal_model(phi=0.95)
+    second = run_signal_filter(spread, calibrate_signal_filter(spread, 1e-3, use_ar1=True))
+    assert second["pvar"].iloc[BURN_IN] == pytest.approx(second["pvar"].iloc[-1], rel=0.1)
+
+
 def test_signal_calibration_defaults_to_the_local_level():
     params = calibrate_signal_filter(simulate_signal_model())
     assert params["phi"] == 0.0
