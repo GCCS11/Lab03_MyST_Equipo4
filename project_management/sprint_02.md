@@ -61,9 +61,9 @@ Las propuestas del 4-nov:
 ### JP: estrategia, pipeline, dashboard y gestión
 | ID | Tarea | Meta | Estado |
 |---|---|---|---|
-| J1 | Charter, sprint 01 y sprint 02 | mié 4 | Listo (PR #1) |
-| J2 | Esqueleto del README | jue 5 | Listo (PR #1) |
-| J3 | `strategy/vecm.py`: VECM, βᵀα, vida media y desviación de equilibrio, con su prueba | jue 5 | Listo (PR #1): 6 pruebas en verde, incluida la comparación contra statsmodels |
+| J1 | Charter, sprint 01 y sprint 02 | mié 4 | Listo (PR #4, rama `feature/jp`) |
+| J2 | Esqueleto del README | jue 5 | Listo (PR #4) |
+| J3 | `strategy/vecm.py`: VECM, βᵀα, vida media y desviación de equilibrio, con su prueba | jue 5 | Listo (PR #4): 6 pruebas en verde, incluida la comparación contra statsmodels |
 | J4 | `strategy/signals.py`: regla con candado, stop y h_max, con su prueba | jue 5 | Pendiente |
 | J5 | `strategy/sizing.py`: 80% proporcional a abs(β), rebalanceo diario contra banda | vie 6 | Pendiente |
 | J6 | Búsqueda de umbrales en entrenamiento; `artifacts/theta.json` congelado con commit | vie 6 | Pendiente |
