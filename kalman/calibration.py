@@ -36,10 +36,11 @@ def log_likelihood(frame):
     return float(-0.5 * (np.log(2 * np.pi * clean["innov_var"]) + clean["innov"] ** 2 / clean["innov_var"]).sum())
 
 
-def calibrate_weights_filter(train_log_prices, beta0, leg, q_ratio=0.0, use_ar1=True):
+def calibrate_weights_filter(train_log_prices, beta0, leg, q_ratio=0.0, use_ar1=True, state_intercept=False):
     """Regresa Q, R, phi y c del filtro 1, con Q = q_ratio * R.
 
     Con use_ar1=False da el caso phi = 0: R y c salen de la varianza y la media del spread.
+    Con state_intercept=True agrega Q_c = Q; junto con use_ar1=False es S14 p18.
     """
     position = list(train_log_prices.columns).index(leg)
     spread = train_log_prices.to_numpy(dtype=float) @ normalize_beta(beta0, position)
@@ -47,7 +48,8 @@ def calibrate_weights_filter(train_log_prices, beta0, leg, q_ratio=0.0, use_ar1=
         phi, c, r = fit_ar1(spread)
     else:
         phi, c, r = 0.0, float(spread.mean()), float(spread.var(ddof=1))
-    return {"Q": q_ratio * r, "R": r, "phi": phi, "c": c}
+    params = {"Q": q_ratio * r, "R": r, "phi": phi, "c": c}
+    return {**params, "Q_c": params["Q"]} if state_intercept else params
 
 
 def calibrate_signal_filter(train_spread, q_ratio=0.0, lam=DEFAULT_LAMBDA, burn_in=DEFAULT_BURN_IN, use_ar1=False):
@@ -64,7 +66,7 @@ def calibrate_signal_filter(train_spread, q_ratio=0.0, lam=DEFAULT_LAMBDA, burn_
     return {"Q": q_ratio * r, "R": r, "phi": phi, "lam": lam, "mu0": mu0, "burn_in": burn_in}
 
 
-def weights_q_table(train_log_prices, beta0, leg, ratios=Q_RATIOS, use_ar1=True, burn_in=DEFAULT_BURN_IN):
+def weights_q_table(train_log_prices, beta0, leg, ratios=Q_RATIOS, use_ar1=True, state_intercept=False, burn_in=DEFAULT_BURN_IN):
     """Diagnostico del filtro 1 por cada razon Q/R; no elige por si solo.
 
     La log-verosimilitud tiende a premiar una Q mayor porque los pesos persiguen el spread,
@@ -72,7 +74,7 @@ def weights_q_table(train_log_prices, beta0, leg, ratios=Q_RATIOS, use_ar1=True,
     """
     rows = []
     for ratio in ratios:
-        params = calibrate_weights_filter(train_log_prices, beta0, leg, ratio, use_ar1)
+        params = calibrate_weights_filter(train_log_prices, beta0, leg, ratio, use_ar1, state_intercept)
         frame = run_weights_filter(train_log_prices, beta0, leg, params)
         weights = frame.filter(like="beta_").iloc[burn_in:]
         rows.append(

@@ -69,6 +69,34 @@ def test_filter_1_first_step_matches_hand_calculation():
     assert frame["beta_B"].iloc[2] == pytest.approx(-0.5 - 0.2 / 3)
 
 
+def test_filter_1_reproduces_the_worked_example_of_s13_p13():
+    log_prices = pd.DataFrame(
+        {"Y": [0.0, 1.30, 1.40, 1.20, 1.25, 0.0], "X": [0.0, 1.0, 1.2, 0.9, 1.1, 0.0]}
+    )
+    params = {"Q": 0.01, "R": 0.25, "phi": 0.0, "c": 0.0, "P0": 0.50}
+    frame = run_weights_filter(log_prices, [1.0, -1.0], "Y", params).iloc[1:]
+    np.testing.assert_allclose(-frame["beta_X"].iloc[1:], [1.201, 1.184, 1.220, 1.196], atol=2e-3)
+    days = frame.iloc[:4]
+    np.testing.assert_allclose(days["innov"], [0.300, -0.042, 0.135, -0.092], atol=2e-3)
+    np.testing.assert_allclose(days["innov_var"], [0.760, 0.506, 0.329, 0.352], atol=2e-3)
+    np.testing.assert_allclose(-days["gain_X"], [0.671, 0.422, 0.267, 0.263], atol=2e-3)
+    np.testing.assert_allclose(days["pvar_X"], [0.168, 0.088, 0.074, 0.060], atol=2e-3)
+
+
+def test_intercept_in_the_state_absorbs_a_level_shift():
+    log_prices, _, params = simulate_weights_model(q=0.0)
+    shifted = log_prices.copy()
+    shifted.iloc[1500:, 0] += 0.05
+    fixed = run_weights_filter(shifted, BETA0, LEG, params)
+    in_state = run_weights_filter(shifted, BETA0, LEG, {**params, "Q_c": 1e-5})
+    assert fixed["c_prior"].nunique() == 1
+    tolerance = 3 * np.sqrt(in_state["pvar_c"].iloc[-1])
+    assert in_state["c_prior"].iloc[-1] == pytest.approx(params["c"] + 0.05, abs=tolerance)
+    assert in_state["c_prior"].iloc[1499] == pytest.approx(params["c"], abs=tolerance)
+    assert {"gain_c", "pvar_c"} <= set(in_state.columns)
+    assert not {"gain_c", "pvar_c"} & set(fixed.columns)
+
+
 def test_filter_2_reproduces_the_worked_example_of_s13_p21():
     spread = pd.Series([0.0, 0.020, 0.060, 0.115, 0.130, 0.070, 0.015, 0.0])
     params = {"Q": 1e-5, "R": 2.5e-3, "phi": 0.0, "lam": None, "mu0": 0.0, "P0": 4e-4}
