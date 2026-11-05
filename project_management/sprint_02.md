@@ -65,7 +65,7 @@ Las propuestas del 4-nov:
 | J2 | Esqueleto del README | jue 5 | Listo (PR #4) |
 | J3 | `strategy/vecm.py`: VECM, βᵀα, vida media y desviación de equilibrio, con su prueba | jue 5 | Listo (PR #4): 6 pruebas en verde, incluida la comparación contra statsmodels |
 | J4 | `strategy/signals.py`: regla con candado, stop y h_max, con su prueba | jue 5 | Listo (PR #4): 10 pruebas en verde, entre ellas candado, h_max, nunca dos posiciones y causalidad por truncamiento |
-| J5 | `strategy/sizing.py`: 80% proporcional a abs(β), rebalanceo diario contra banda | vie 6 | Pendiente |
+| J5 | `strategy/sizing.py`: 80% proporcional a abs(β), rebalanceo diario contra banda | vie 6 | Listo (PR #4): 8 pruebas en verde. Falta medir el costo de cada política con el motor de Gian (J6) |
 | J6 | Búsqueda de umbrales en entrenamiento; `artifacts/theta.json` congelado con commit | vie 6 | Pendiente |
 | J7 | `main.py` con `run_pipeline`, que escribe `artifacts/` | vie 6 | Pendiente |
 | J8 | Una sola corrida de prueba y validación con θ congelado | vie 6, noche | Pendiente |
