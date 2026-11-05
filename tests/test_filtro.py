@@ -1,0 +1,170 @@
+"""Prueba 4: innovaciones de ambos filtros, mas la causalidad y la mecanica de cada filtro."""
+import numpy as np
+import pandas as pd
+import pytest
+from statsmodels.stats.diagnostic import acorr_ljungbox
+
+from kalman.calibration import calibrate_signal_filter, calibrate_weights_filter, half_life
+from kalman.signal_filter import run_signal_filter
+from kalman.simulation import LEG, THETA0, simulate_signal_model, simulate_weights_model
+from kalman.weights_filter import run_weights_filter
+
+BURN_IN = 60
+BETA0 = np.concatenate([[1.0], THETA0])
+
+
+def assert_white_with_unit_variance(innov_norm):
+    """Varianza cercana a uno y Ljung-Box no significativo a 10 rezagos."""
+    clean = innov_norm.iloc[BURN_IN:].dropna()
+    assert clean.var() == pytest.approx(1.0, abs=0.15)
+    assert acorr_ljungbox(clean, lags=[10])["lb_pvalue"].iloc[0] > 0.01
+
+
+def signal_params(q=1e-7, r=1e-4, phi=0.0, lam=0.97, burn_in=BURN_IN):
+    return {"Q": q, "R": r, "phi": phi, "lam": lam, "mu0": 0.0, "burn_in": burn_in}
+
+
+def test_filter_1_innovations_are_white_when_data_follow_the_model():
+    log_prices, _, params = simulate_weights_model()
+    frame = run_weights_filter(log_prices, BETA0, LEG, params)
+    assert_white_with_unit_variance(frame["innov_norm"])
+
+
+@pytest.mark.parametrize("phi", [0.0, 0.95])
+def test_filter_2_innovations_are_white_when_data_follow_the_model(phi):
+    spread = simulate_signal_model(phi=phi)
+    frame = run_signal_filter(spread, signal_params(phi=phi))
+    assert_white_with_unit_variance(frame["innov_norm"])
+
+
+def test_ignoring_the_persistence_leaves_autocorrelated_innovations():
+    log_prices, _, params = simulate_weights_model()
+    frame = run_weights_filter(log_prices, BETA0, LEG, {**params, "phi": 0.0, "R": 1e-3})
+    assert frame["innov_norm"].iloc[BURN_IN:].autocorr(1) > 0.5
+
+
+def test_filter_1_tracks_weights_that_drift():
+    log_prices, true_theta, params = simulate_weights_model(q=1e-6)
+    frame = run_weights_filter(log_prices, BETA0, LEG, params)
+    estimated = frame[[f"beta_{ticker}" for ticker in true_theta.columns]].to_numpy()
+    assert np.median(np.abs(estimated - true_theta.to_numpy())[BURN_IN:]) < 0.02
+
+
+def test_high_q_makes_the_filter_chase_the_spread():
+    log_prices, _, params = simulate_weights_model()
+    slow = run_weights_filter(log_prices, BETA0, LEG, {**params, "Q": 0.0})
+    fast = run_weights_filter(log_prices, BETA0, LEG, {**params, "Q": 0.1 * params["R"]})
+    assert half_life(fast["spread"]) < 0.5 * half_life(slow["spread"])
+
+
+def test_filter_1_first_step_matches_hand_calculation():
+    log_prices = pd.DataFrame({"A": [1.0, 1.2, 1.2], "B": [2.0, 2.0, 2.0]})
+    params = {"Q": 0.01, "R": 0.04, "phi": 0.0, "c": 0.0}
+    frame = run_weights_filter(log_prices, [1.0, -0.5], "A", params)
+    assert frame["spread"].iloc[1] == pytest.approx(0.2)
+    assert frame["innov"].iloc[1] == pytest.approx(0.2)
+    assert frame["innov_var"].iloc[1] == pytest.approx(0.12)
+    assert frame["gain_B"].iloc[1] == pytest.approx(-1 / 3)
+    assert frame["pvar_B"].iloc[1] == pytest.approx(0.02 / 3)
+    assert frame["beta_B"].iloc[2] == pytest.approx(-0.5 - 0.2 / 3)
+
+
+def test_filter_1_reproduces_the_worked_example_of_s13_p13():
+    log_prices = pd.DataFrame(
+        {"Y": [0.0, 1.30, 1.40, 1.20, 1.25, 0.0], "X": [0.0, 1.0, 1.2, 0.9, 1.1, 0.0]}
+    )
+    params = {"Q": 0.01, "R": 0.25, "phi": 0.0, "c": 0.0, "P0": 0.50}
+    frame = run_weights_filter(log_prices, [1.0, -1.0], "Y", params).iloc[1:]
+    np.testing.assert_allclose(-frame["beta_X"].iloc[1:], [1.201, 1.184, 1.220, 1.196], atol=2e-3)
+    days = frame.iloc[:4]
+    np.testing.assert_allclose(days["innov"], [0.300, -0.042, 0.135, -0.092], atol=2e-3)
+    np.testing.assert_allclose(days["innov_var"], [0.760, 0.506, 0.329, 0.352], atol=2e-3)
+    np.testing.assert_allclose(-days["gain_X"], [0.671, 0.422, 0.267, 0.263], atol=2e-3)
+    np.testing.assert_allclose(days["pvar_X"], [0.168, 0.088, 0.074, 0.060], atol=2e-3)
+
+
+def test_intercept_in_the_state_absorbs_a_level_shift():
+    log_prices, _, params = simulate_weights_model(q=0.0)
+    shifted = log_prices.copy()
+    shifted.iloc[1500:, 0] += 0.05
+    fixed = run_weights_filter(shifted, BETA0, LEG, params)
+    in_state = run_weights_filter(shifted, BETA0, LEG, {**params, "Q_c": 1e-5})
+    assert fixed["c_prior"].nunique() == 1
+    tolerance = 3 * np.sqrt(in_state["pvar_c"].iloc[-1])
+    assert in_state["c_prior"].iloc[-1] == pytest.approx(params["c"] + 0.05, abs=tolerance)
+    assert in_state["c_prior"].iloc[1499] == pytest.approx(params["c"], abs=tolerance)
+    assert {"gain_c", "pvar_c"} <= set(in_state.columns)
+    assert not {"gain_c", "pvar_c"} & set(fixed.columns)
+
+
+def test_filter_2_reproduces_the_worked_example_of_s13_p21():
+    spread = pd.Series([0.0, 0.020, 0.060, 0.115, 0.130, 0.070, 0.015, 0.0])
+    params = {"Q": 1e-5, "R": 2.5e-3, "phi": 0.0, "lam": None, "mu0": 0.0, "P0": 4e-4}
+    frame = run_signal_filter(spread, params).iloc[1:]
+    np.testing.assert_allclose(
+        frame["mu_prior"], [0.0, 0.0028, 0.0101, 0.0222, 0.0337, 0.0373, 0.0352], atol=1e-4
+    )
+    np.testing.assert_allclose(
+        frame["sigma_prior"].iloc[:6], [0.0539, 0.0535, 0.0532, 0.0529, 0.0527, 0.0525], atol=1e-4
+    )
+    np.testing.assert_allclose(frame["z"].iloc[:6], [0.37, 1.07, 1.97, 2.04, 0.69, -0.42], atol=0.01)
+    np.testing.assert_allclose(
+        frame["gain"].iloc[:6], [0.141, 0.127, 0.115, 0.107, 0.100, 0.094], atol=1e-3
+    )
+
+
+@pytest.mark.parametrize("lam", [None, 0.97])
+def test_posterior_z_shrinks_by_one_minus_the_gain_in_the_local_level(lam):
+    spread = simulate_signal_model()
+    frame = run_signal_filter(spread, signal_params(q=1e-5, lam=lam, burn_in=0))
+    posterior_mean = frame["mu_prior"].shift(-1)
+    z_posterior = (spread - posterior_mean) / frame["sigma_prior"]
+    expected = (1 - frame["gain"]) * frame["z"]
+    np.testing.assert_allclose(z_posterior.iloc[1:-1], expected.iloc[1:-1])
+
+
+@pytest.mark.parametrize("cut", [1200, 1800, 2400])
+def test_filters_do_not_use_future_data(cut):
+    log_prices, _, params = simulate_weights_model()
+    shocked = log_prices.copy()
+    shocked.iloc[cut + 1 :] += 0.5
+    full = run_weights_filter(log_prices, BETA0, LEG, params)
+    other = run_weights_filter(shocked, BETA0, LEG, params)
+    pd.testing.assert_frame_equal(full.iloc[: cut + 1], other.iloc[: cut + 1])
+
+    z_full = run_signal_filter(full["spread"], signal_params())
+    z_other = run_signal_filter(other["spread"], signal_params())
+    pd.testing.assert_frame_equal(z_full.iloc[: cut + 1], z_other.iloc[: cut + 1])
+
+
+def test_z_is_missing_during_the_burn_in():
+    frame = run_signal_filter(simulate_signal_model(), signal_params())
+    assert frame["z"].iloc[:BURN_IN].isna().all()
+    assert frame["z"].iloc[BURN_IN:].notna().all()
+
+
+@pytest.mark.parametrize("use_ar1", [True, False])
+def test_calibration_recovers_static_filter_when_q_is_zero(use_ar1):
+    log_prices, _, _ = simulate_weights_model(q=0.0)
+    params = calibrate_weights_filter(log_prices, BETA0, LEG, q_ratio=0.0, use_ar1=use_ar1)
+    frame = run_weights_filter(log_prices, BETA0, LEG, params)
+    assert (frame["beta_A2"] == THETA0[0]).all()
+    assert params["phi"] == (pytest.approx(0.95, abs=0.02) if use_ar1 else 0.0)
+
+
+def test_calibrated_initial_variance_is_settled_before_the_burn_in_ends():
+    log_prices, _, truth = simulate_weights_model()
+    ratio = truth["Q"] / truth["R"]
+    first = run_weights_filter(log_prices, BETA0, LEG, calibrate_weights_filter(log_prices, BETA0, LEG, ratio))
+    variances = first["pvar_A2"]
+    assert variances.iloc[BURN_IN] == pytest.approx(variances.iloc[-1], rel=0.5)
+
+    spread = simulate_signal_model(phi=0.95)
+    second = run_signal_filter(spread, calibrate_signal_filter(spread, 1e-3, use_ar1=True))
+    assert second["pvar"].iloc[BURN_IN] == pytest.approx(second["pvar"].iloc[-1], rel=0.1)
+
+
+def test_signal_calibration_defaults_to_the_local_level():
+    params = calibrate_signal_filter(simulate_signal_model())
+    assert params["phi"] == 0.0
+    assert params["burn_in"] == 60
