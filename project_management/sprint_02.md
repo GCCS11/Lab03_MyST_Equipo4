@@ -66,10 +66,10 @@ Las propuestas del 4-nov:
 | J3 | `strategy/vecm.py`: VECM, βᵀα, vida media y desviación de equilibrio, con su prueba | jue 5 | Listo (PR #4): 6 pruebas en verde, incluida la comparación contra statsmodels |
 | J4 | `strategy/signals.py`: regla con candado, stop y h_max, con su prueba | jue 5 | Listo (PR #4): 10 pruebas en verde, entre ellas candado, h_max, nunca dos posiciones y causalidad por truncamiento |
 | J5 | `strategy/sizing.py`: 80% proporcional a abs(β), rebalanceo diario contra banda | vie 6 | Listo (PR #4): 8 pruebas en verde. Falta medir el costo de cada política con el motor de Gian (J6) |
-| J6 | Búsqueda de umbrales en entrenamiento; `artifacts/theta.json` congelado con commit | vie 6 | Pendiente |
-| J7 | `main.py` con `run_pipeline`, que escribe `artifacts/` | vie 6 | Pendiente |
-| J8 | Una sola corrida de prueba y validación con θ congelado | vie 6, noche | Pendiente |
-| J9 | Prueba 1 (causalidad) | sáb 7 | Pendiente |
+| J6 | Búsqueda de umbrales en entrenamiento; `artifacts/theta.json` congelado con commit | vie 6 | Bloqueado: necesita el motor de backtest (G5) |
+| J7 | `main.py` con `run_pipeline`, que escribe `artifacts/` | vie 6 | En curso (PR #4): con los PR #3 y #5 corre hasta las señales y escribe los artifacts de la vista técnica. VECM en entrenamiento: βᵀα = −0.066, sí corrige, vida media de 10.1 días. Falta conectar el motor y las métricas (G5, G7) |
+| J8 | Una sola corrida de prueba y validación con θ congelado | vie 6, noche | Pendiente: necesita J6 |
+| J9 | Prueba 1 (causalidad) | sáb 7 | Listo (PR #4): pasa con datos reales en tres fechas de prueba y validación. En esta rama se omite hasta fusionar los PR #3 y #5 |
 | J10 | `dashboard/app.py` con vista ejecutiva y técnica; exportación y guía en `docs/` | sáb 7 | En curso (PR #4): las dos vistas, la exportación y la guía del README funcionan con artifacts sintéticos (7 pruebas). Falta correrlo con los artifacts reales de `main.py` (J7) y generar `docs/dashboard.html` |
 | J11 | Sección del reporte y figuras 2 y 6 | sáb 7 | Pendiente |
 | J12 | README final con el uso de IA de los tres, y el postmortem | dom 8 | Pendiente |
