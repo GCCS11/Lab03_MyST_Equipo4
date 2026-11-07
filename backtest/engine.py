@@ -50,6 +50,10 @@ def run_backtest(rule, betas, prices, params=BacktestParams()):
     accepted by strategy.weights.align_betas. `prices` are real prices for the same tickers and
     dates as `rule`. Only data up to each row's own date is used, so truncating `prices` or
     `rule` after any date t never changes the output up to t.
+
+    Any position still open on the last row is force-closed that same day (with its closing
+    commission), logged with motivo "fin_de_serie", so the backtest never ends with an
+    unrealized position.
     """
     tickers = list(prices.columns)
     index = rule.index
@@ -57,6 +61,9 @@ def run_backtest(rule, betas, prices, params=BacktestParams()):
     price_values = prices.reindex(index).to_numpy(dtype=float)
     exec_dir = rule["d"].shift(1).fillna(0).to_numpy(dtype=int)
     exec_reason = rule["exit_reason"].shift(1).fillna("").to_numpy()
+    if len(exec_dir) > 0 and exec_dir[-1] != 0:
+        exec_dir[-1] = 0
+        exec_reason[-1] = "fin_de_serie"
 
     n_steps, n_legs = len(index), len(tickers)
     shares = np.zeros((n_steps, n_legs))
@@ -77,7 +84,9 @@ def run_backtest(rule, betas, prices, params=BacktestParams()):
         )
         delta = target - current
         comisiones[t] = params.commission * float(np.abs(delta) @ price_values[t])
-        short_notional = float(np.abs(np.minimum(target, 0.0)) @ price_values[t])
+        # el prestamo se cobra sobre la posicion con la que se empezo el dia (mantenida durante
+        # la noche), no sobre la que se acaba de abrir hoy
+        short_notional = float(np.abs(np.minimum(current, 0.0)) @ price_values[t])
         prestamo[t] = params.borrow_rate_annual / params.trading_days * short_notional
 
         cash[t] = prev_cash - float(delta @ price_values[t]) - comisiones[t] - prestamo[t]
@@ -99,8 +108,8 @@ def _trade_log(diario, exec_reason, index):
     """One row per closed trade: entrada and salida are the first and last day the position was
     held, including the day it closes (that day carries the closing commission). Assumes the
     direction never flips sign in a single step without passing through 0, as
-    strategy.signals.spread_direction guarantees; an open position still held at the end of the
-    series is left out, since it has not closed.
+    strategy.signals.spread_direction guarantees. run_backtest forces direction to 0 on the last
+    row when it would still be open, so every trade closes within the series.
     """
     direction = diario["direccion"].to_numpy()
     pnl_neto = diario["pnl_neto"].to_numpy()
