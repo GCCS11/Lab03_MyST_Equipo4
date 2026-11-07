@@ -1,0 +1,24 @@
+{
+  "tickers": [
+    "AEP",
+    "XEL",
+    "ED",
+    "EXC",
+    "WEC",
+    "ES"
+  ],
+  "beta_johansen": [
+    1.0,
+    0.410861,
+    -0.411518,
+    -0.187292,
+    -0.337818,
+    -0.59828
+  ],
+  "pata_normalizada": "AEP",
+  "eigenvalor": 0.032477344462077354,
+  "vida_media": 8.877094680665426,
+  "train_end": "2021-09-08",
+  "test_end": "2024-04-03",
+  "grupos_evaluados_total": 1576
+}
