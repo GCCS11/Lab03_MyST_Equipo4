@@ -74,7 +74,7 @@ def fig7_equity(equity, mode="light"):
         loc="upper center", bbox_to_anchor=(0.5, -0.14), ncol=2, fontsize=9, frameon=False,
     )
 
-    ax_equity.set_title("Figura 7. Capital continuo y drawdown, con metricas por particion")
+    ax_equity.set_title("Figura 7. Capital continuo y drawdown, con métricas por partición")
     return figure
 
 
