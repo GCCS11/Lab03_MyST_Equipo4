@@ -4,6 +4,8 @@ Verifica la identidad de caja de cada paso (equity = cash + valor de mercado), q
 nunca mira precios futuros, que la banda rebalancea menos que el modo diario y, con un
 golden-file, que la salida completa de un escenario fijo no cambia sin que alguien lo note.
 """
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -11,7 +13,7 @@ import pytest
 from backtest.engine import BacktestParams, run_backtest
 from strategy.signals import SignalParams, spread_direction
 
-GOLDEN_DIR = __file__.rsplit("/", 1)[0] + "/golden"
+GOLDEN_DIR = Path(__file__).resolve().parent / "golden"
 TICKERS = ["A", "B", "C"]
 BETA = np.array([1.0, -0.5, -0.5])
 BASE_PRICE = np.array([10.0, 20.0, 40.0])

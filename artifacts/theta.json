@@ -1,0 +1,15 @@
+{
+  "z_in": 2.0,
+  "z_out": 0.5,
+  "z_stop": 3.0,
+  "h_max": 27,
+  "band": 0.0075,
+  "theta_id": 151,
+  "sharpe_media": 0.504135777918488,
+  "sharpe_std": 0.3219415447229581,
+  "criterio": "Mayor Sharpe medio menos una desviación estándar entre pliegues del walk-forward en entrenamiento, entre los theta con al menos 3 operaciones en cada pliegue",
+  "elegibles": 162,
+  "combinaciones_evaluadas": 162,
+  "pliegues": 5,
+  "train_end": "2021-09-08"
+}

@@ -12,7 +12,7 @@ El primer eigenvector de cada ventana se normaliza en dos pasos:
    ventana no tiene a quien alinearse: se orienta para que su pata de mayor |peso| quede positiva.
 
 Correr con: python -m cointegration.eigvec_movil
-            python -m cointegration.eigvec_movil --hasta train   (unico modo permitido por ahora)
+            python -m cointegration.eigvec_movil --hasta todo    (solo con artifacts/theta.json congelado)
 """
 import argparse
 import json
@@ -92,10 +92,11 @@ def parse_args():
 def main(hasta=None):
     """Corre el calculo y escribe los dos artifacts.
 
-    Se niega a correr con hasta="todo": todavia no existe artifacts/theta.json congelado.
+    Se niega a correr con hasta="todo" mientras no exista artifacts/theta.json congelado: la
+    muestra completa solo se ve despues de fijar todo lo que se elige con entrenamiento.
     """
     hasta = parse_args().hasta if hasta is None else hasta
-    if hasta == "todo":
+    if hasta == "todo" and not (ARTIFACTS_DIR / "theta.json").exists():
         raise SystemExit(
             "todavia no existe artifacts/theta.json congelado: no corras --hasta todo"
         )

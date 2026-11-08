@@ -136,6 +136,7 @@ def test_run_writes_tickers_only_in_eigvec_movil_and_trace_stat_in_diagnostico(t
     assert len(movil) == len(diagnostico)
 
 
-def test_main_refuses_to_run_hasta_todo():
+def test_main_refuses_to_run_hasta_todo_without_frozen_theta(tmp_path, monkeypatch):
+    monkeypatch.setattr(eigvec_movil, "ARTIFACTS_DIR", tmp_path)
     with pytest.raises(SystemExit):
         main(hasta="todo")
