@@ -74,7 +74,7 @@ Cada parámetro congelado tiene su propio comando. Ya se corrieron en este orden
 | 4. Congelar theta (una sola vez) | `python -m strategy.theta` | `theta.json` |
 | 5. Pipeline y backtest | `python main.py` | ver arriba |
 | 6. Johansen móvil en toda la muestra | `python -m cointegration.eigvec_movil --hasta todo` | `eigvec_movil.csv` |
-| 7. Figuras y dashboard estático | `python -m cointegration.figures`, `python -m kalman.figures`, `python -m dashboard.export` | `docs/` |
+| 7. Figuras y dashboard estático | `python -m cointegration.figures`, `python -m kalman.figures`, `python -m strategy.figures`, `python -m dashboard.export` | `docs/` |
 
 `python -m strategy.theta` se niega a sobrescribir `theta.json`, y el paso 6 se niega a correr sin él.
 
