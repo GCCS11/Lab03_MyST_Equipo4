@@ -1,4 +1,6 @@
 """Prueba 2: el vector de pesos mantiene escala y signo entre reestimaciones consecutivas."""
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -45,7 +47,9 @@ def test_consecutive_reestimations_keep_past_weights(filtered, t):
 
 def test_rolling_johansen_has_no_sign_flips():
     path = ARTIFACTS_DIR / "eigvec_movil.csv"
-    if not path.exists():
-        pytest.skip("Falta artifacts/eigvec_movil.csv (tarea G4)")
-    vectors = pd.read_csv(path, index_col="date").to_numpy()
+    seleccion_path = ARTIFACTS_DIR / "seleccion.json"
+    if not path.exists() or not seleccion_path.exists():
+        pytest.skip("Falta artifacts/eigvec_movil.csv o artifacts/seleccion.json (tarea G4)")
+    tickers = json.loads(seleccion_path.read_text(encoding="utf-8"))["tickers"]
+    vectors = pd.read_csv(path, index_col="date")[tickers].to_numpy()
     assert ((vectors[1:] * vectors[:-1]).sum(axis=1) > 0).all()
