@@ -6,7 +6,9 @@ Every parameter comes frozen from artifacts/ (chosen on the training partition o
 3. Filter 1: dynamic weights; the equilibrium deviation uses the prior weights beta_{t|t-1}.
 4. Filter 2: latent mean and scale of the deviation, and the causal z-score.
 5. Trading rule with the thresholds of theta.json.
-6. Artifacts for the dashboard (dashboard/data.py lists the files and columns).
+6. One continuous backtest with costs from the first valid z-score to the end of the sample, and
+   the metrics of each partition on its own slice of that run.
+7. Artifacts for the dashboard (dashboard/data.py lists the files and columns).
 """
 import argparse
 import json
@@ -16,15 +18,21 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from backtest.engine import BacktestParams, run_backtest
 from cointegration.seleccion import PRICES_FILE
-from config import ARTIFACTS_DIR, SEED, set_seed
+from config import ARTIFACTS_DIR, INITIAL_CAPITAL, SEED, set_seed
 from kalman.signal_filter import run_signal_filter
 from kalman.weights_filter import run_weights_filter
+from performance.metrics import compute_metrics, write_metricas_json
 from strategy.signals import spread_direction
 from strategy.vecm import equilibrium_deviation, fit_vecm
 
 SIGNAL_KEYS = ("Q", "R", "phi", "lam", "mu0", "P0", "burn_in")
 RULE_KEYS = ("z_in", "z_out", "z_stop", "h_max")
+TRADE_COLUMNS = (
+    "entrada", "salida", "split", "direccion", "pnl_bruto", "comisiones", "prestamo", "pnl_neto",
+    "retorno", "motivo",
+)
 
 
 def parse_args():
@@ -111,6 +119,72 @@ def signal_artifacts(log_prices, splits, result):
     }
 
 
+def run_frozen_backtest(log_prices, result, theta):
+    """Backtest of the frozen rule from the first valid z-score to the last date.
+
+    It is one continuous run: the strategy trades through the cut dates as it would live, so a
+    position open on a cut date carries over. The filters' burn-in (z is NaN) is left out
+    because no decision was possible there, as in the training walk-forward.
+    """
+    start = result["signal"]["z"].first_valid_index()
+    rule = result["rule"].loc[start:]
+    betas = result["weights"].filter(like="beta_").loc[start:]
+    prices = np.exp(log_prices).loc[start:]
+    return run_backtest(rule, betas, prices, BacktestParams(band=theta["band"]))
+
+
+def capital_before(backtest):
+    """Equity at the close of the previous day, the base of each day's return."""
+    return backtest.equity.shift(1, fill_value=INITIAL_CAPITAL)
+
+
+def split_metrics(backtest, splits):
+    """Metrics of each partition on its slice of the continuous run.
+
+    Each partition starts from the equity it inherited, and a trade belongs to the partition
+    where it was opened.
+    """
+    labels = splits.reindex(backtest.diario.index)
+    trade_split = splits.reindex(backtest.operaciones["entrada"]).to_numpy()
+    base = capital_before(backtest)
+    metrics = {}
+    for split in pd.unique(labels):
+        days = (labels == split).to_numpy()
+        metrics[split] = compute_metrics(
+            backtest.diario[days], backtest.operaciones[trade_split == split],
+            initial_capital=float(base[days].iloc[0]),
+        )
+    return metrics
+
+
+def trade_artifact(backtest, splits):
+    """Trade log as dashboard/data.py expects: partition of the entry day, costs of the days the
+    position was held and the net return over the equity it started with."""
+    diario, base = backtest.diario, capital_before(backtest)
+    rows = []
+    for trade in backtest.operaciones.itertuples(index=False):
+        held = diario.loc[trade.entrada:trade.salida]
+        rows.append({
+            "entrada": trade.entrada, "salida": trade.salida, "split": splits.loc[trade.entrada],
+            "direccion": trade.direccion, "pnl_bruto": held["pnl_bruto"].sum(),
+            "comisiones": held["comisiones"].sum(), "prestamo": held["prestamo"].sum(),
+            "pnl_neto": trade.pnl_neto, "retorno": trade.pnl_neto / base.loc[trade.entrada],
+            "motivo": trade.motivo,
+        })
+    return pd.DataFrame(rows, columns=TRADE_COLUMNS)
+
+
+def equity_artifact(backtest, splits):
+    """Daily equity with its drawdown from the running peak and the 252-day rolling Sharpe."""
+    equity = backtest.equity
+    return pd.DataFrame({
+        "split": splits.reindex(equity.index),
+        "equity": equity,
+        "drawdown": equity / equity.cummax() - 1.0,
+        "rolling_sharpe": compute_metrics(backtest.diario, backtest.operaciones).rolling_sharpe,
+    })
+
+
 def write_artifacts(directory, frames, vecm):
     """Write the CSV files and the VECM summary into `directory`."""
     directory = Path(directory)
@@ -137,15 +211,27 @@ def main(quick=False):
 
     result = run_pipeline(log_prices, selection, filters, theta)
     out_dir = Path(tempfile.mkdtemp(prefix="lab03_quick_")) if quick else ARTIFACTS_DIR
-    write_artifacts(out_dir, signal_artifacts(log_prices, splits, result), vecm)
-    print(f"Artifacts de señales escritos en {out_dir}")
-
+    frames = signal_artifacts(log_prices, splits, result)
     if theta is None:
-        print("Pendiente: artifacts/theta.json (búsqueda de umbrales, J6). Las señales quedan en 0.")
-    else:
-        trades = int((result["rule"]["exit_reason"] != "").sum())
-        print(f"Operaciones cerradas con theta congelado: {trades}")
-    print("Pendiente: motor de backtest y métricas (backtest/, performance/): equity, operaciones y métricas.")
+        write_artifacts(out_dir, frames, vecm)
+        print(f"Artifacts de señales escritos en {out_dir}")
+        print("Pendiente: artifacts/theta.json (python -m strategy.theta). Sin theta no hay backtest.")
+        return
+
+    print(f"Theta congelado: z_in {theta['z_in']}, z_out {theta['z_out']}, z_stop {theta['z_stop']}, "
+          f"h_max {theta['h_max']} días, banda {theta['band']:.2%}")
+    backtest = run_frozen_backtest(log_prices, result, theta)
+    metrics = split_metrics(backtest, splits)
+    frames["equity"] = equity_artifact(backtest, splits)
+    write_artifacts(out_dir, frames, vecm)
+    trade_artifact(backtest, splits).to_csv(out_dir / "operaciones.csv", index=False)
+    write_metricas_json(out_dir / "metricas.json", metrics)
+    print(f"Artifacts escritos en {out_dir}")
+
+    for split, values in metrics.items():
+        print(f"{split:>10}: Sharpe {values.sharpe:5.2f} · retorno {values.retorno_total:7.1%} · "
+              f"drawdown máx. {values.max_drawdown:6.1%} · {values.n_operaciones} operaciones · "
+              f"comisiones {values.comisiones:,.0f} USD")
 
 
 if __name__ == "__main__":
