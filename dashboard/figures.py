@@ -294,7 +294,7 @@ def technical_panels(artifacts, splits, mode):
         ("pesos", "pesos", lambda f: component_figure(
             f, "beta_", f"Pesos β̂_t (Filtro 1){note}", "β", tickers, mode, bounds, skip=fixed)),
         ("eigvec", "eigvec_movil", lambda f: component_figure(
-            f, "", f"Primer eigenvector de Johansen móvil{note}", "Peso", tickers, mode, bounds, skip=fixed)),
+            f, "", "Primer eigenvector de Johansen móvil (norma L1 = 1)", "Peso", tickers, mode, bounds)),
         ("ganancia_f1", "ganancias", lambda f: component_figure(f, "f1_gain_", "Ganancia de Kalman, Filtro 1", "K_t", tickers, mode, bounds)),
         ("ganancia_f2", "ganancias", lambda f: component_figure(f, "f2_gain", "Ganancia de Kalman, Filtro 2", "K_t", tickers, mode, bounds)),
         ("varianza_f1", "varianzas", lambda f: component_figure(f, "f1_pvar_", "Varianza posterior, Filtro 1", "P_t", tickers, mode, bounds, log_y=True)),
