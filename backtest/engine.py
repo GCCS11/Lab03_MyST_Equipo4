@@ -35,7 +35,8 @@ class BacktestResult:
 
     diario: pd.DataFrame      # direccion, pnl_bruto, comisiones, prestamo, pnl_neto, cash, equity
     posiciones: pd.DataFrame  # shares per leg, one column per ticker
-    operaciones: pd.DataFrame  # entrada, salida, direccion, pnl_neto, motivo (closed trades only)
+    operaciones: pd.DataFrame  # entrada, salida, direccion, pnl_bruto, comisiones, prestamo,
+    #                            pnl_neto, retorno, motivo (closed trades only)
 
     @property
     def equity(self):
@@ -100,19 +101,31 @@ def run_backtest(rule, betas, prices, params=BacktestParams()):
         "prestamo": prestamo, "pnl_neto": pnl_neto, "cash": cash, "equity": equity,
     }, index=index)
     posiciones = pd.DataFrame(shares, index=index, columns=tickers)
-    operaciones = _trade_log(diario, exec_reason, index)
+    operaciones = _trade_log(diario, exec_reason, index, params.initial_capital)
     return BacktestResult(diario=diario, posiciones=posiciones, operaciones=operaciones)
 
 
-def _trade_log(diario, exec_reason, index):
+OPERACIONES_COLUMNS = (
+    "entrada", "salida", "direccion", "pnl_bruto", "comisiones", "prestamo", "pnl_neto",
+    "retorno", "motivo",
+)
+
+
+def _trade_log(diario, exec_reason, index, initial_capital):
     """One row per closed trade: entrada and salida are the first and last day the position was
-    held, including the day it closes (that day carries the closing commission). Assumes the
-    direction never flips sign in a single step without passing through 0, as
-    strategy.signals.spread_direction guarantees. run_backtest forces direction to 0 on the last
-    row when it would still be open, so every trade closes within the series.
+    held, including the day it closes (that day carries the closing commission). `retorno` is
+    the trade's pnl_neto over the equity the day before it opened (or initial_capital, for a
+    trade that opens on the very first row). Assumes the direction never flips sign in a single
+    step without passing through 0, as strategy.signals.spread_direction guarantees.
+    run_backtest forces direction to 0 on the last row when it would still be open, so every
+    trade closes within the series.
     """
     direction = diario["direccion"].to_numpy()
+    pnl_bruto = diario["pnl_bruto"].to_numpy()
+    comisiones = diario["comisiones"].to_numpy()
+    prestamo = diario["prestamo"].to_numpy()
     pnl_neto = diario["pnl_neto"].to_numpy()
+    equity = diario["equity"].to_numpy()
     n_steps = len(direction)
     rows, t = [], 0
     while t < n_steps:
@@ -126,9 +139,16 @@ def _trade_log(diario, exec_reason, index):
         close = end + 1
         if close >= n_steps:
             break
+        equity_antes = equity[start - 1] if start > 0 else initial_capital
+        neto = float(pnl_neto[start : close + 1].sum())
         rows.append({
             "entrada": index[start], "salida": index[close], "direccion": int(side),
-            "pnl_neto": float(pnl_neto[start : close + 1].sum()), "motivo": exec_reason[close],
+            "pnl_bruto": float(pnl_bruto[start : close + 1].sum()),
+            "comisiones": float(comisiones[start : close + 1].sum()),
+            "prestamo": float(prestamo[start : close + 1].sum()),
+            "pnl_neto": neto,
+            "retorno": neto / equity_antes if equity_antes else 0.0,
+            "motivo": exec_reason[close],
         })
         t = close + 1
-    return pd.DataFrame(rows, columns=["entrada", "salida", "direccion", "pnl_neto", "motivo"])
+    return pd.DataFrame(rows, columns=OPERACIONES_COLUMNS)
