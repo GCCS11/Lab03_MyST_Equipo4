@@ -1,5 +1,5 @@
-"""Unit tests for cointegration/eigvec_movil.py: causalidad, consistencia de signo y escala,
-ausencia de NaN, y la bandera ref_inestable cuando la pata de referencia colapsa.
+"""Unit tests for cointegration/eigvec_movil.py: causalidad, acotacion y continuidad de signo
+de la normalizacion por norma L1, y ausencia de NaN.
 
 Los datos son sinteticos y cointegrados por construccion (una tendencia comun I(1) mas ruido
 idiosincratico estacionario). No se usa ningun precio ni particion real de test o validacion.
@@ -11,7 +11,7 @@ import pandas as pd
 import pytest
 
 from cointegration import eigvec_movil
-from cointegration.eigvec_movil import load_group_log_prices, main, rolling_eigenvector
+from cointegration.eigvec_movil import load_group_log_prices, main, rolling_eigenvector, run
 from data.loader import split_positions
 
 SEED = 42
@@ -36,25 +36,22 @@ def test_causality_truncating_gives_the_same_rows_up_to_t():
     pd.testing.assert_frame_equal(full.iloc[: len(partial)], partial)
 
 
-def test_scale_is_fixed_at_one_on_the_reference_leg():
+def test_weights_are_bounded_between_minus_one_and_one_by_the_l1_norm():
     log_prices = make_cointegrated_log_prices()
     table = rolling_eigenvector(log_prices, window=50, step=10)
+    weights = table[["A", "B"]]
 
-    ref = next(t for t in ("A", "B") if np.isclose(table[t].iloc[0], 1.0))
-    assert (table[ref] == 1.0).all()
+    assert weights.abs().sum(axis=1).to_numpy() == pytest.approx(1.0)
+    assert (weights.abs() <= 1.0).all().all()
 
 
-def test_sign_is_consistent_across_windows():
+def test_sign_never_flips_between_consecutive_windows():
     log_prices = make_cointegrated_log_prices()
     table = rolling_eigenvector(log_prices, window=50, step=10)
+    weights = table[["A", "B"]].to_numpy()
 
-    ref = next(t for t in ("A", "B") if np.isclose(table[t].iloc[0], 1.0))
-    other = "B" if ref == "A" else "A"
-    stable = table.loc[~table["ref_inestable"], other]
-
-    signo_inicial = np.sign(stable.iloc[0])
-    assert signo_inicial != 0
-    assert (np.sign(stable) == signo_inicial).all()
+    dot_consecutivo = (weights[1:] * weights[:-1]).sum(axis=1)
+    assert (dot_consecutivo > 0).all()
 
 
 def test_csv_has_no_nan():
@@ -63,11 +60,13 @@ def test_csv_has_no_nan():
     assert not table.isna().any().any()
 
 
-def test_ref_inestable_flags_windows_where_the_reference_leg_collapses(monkeypatch):
+def test_sign_alignment_overrides_an_arbitrary_flip_from_johansen(monkeypatch):
+    """Johansen devuelve el eigenvector ambiguo hasta el signo: simula una ventana intermedia
+    que vuelve con la convencion opuesta y comprueba que la normalizacion la realinea."""
     vectors = [
-        np.array([1.0, -1.0]),   # ventana 0: fija la pata de referencia (A)
-        np.array([0.02, -1.0]),  # ventana 1: A cae a 2% del maximo de esa ventana -> inestable
-        np.array([0.8, -1.0]),   # ventana 2: vuelve a ser estable
+        np.array([2.0, -1.0]),   # ventana 0: fija la orientacion (A queda positivo)
+        np.array([-1.0, 0.6]),   # ventana 1: Johansen regresa la convencion opuesta
+        np.array([1.5, -0.9]),   # ventana 2: misma direccion "natural" que la ventana 0
     ]
     calls = iter(vectors)
 
@@ -84,9 +83,10 @@ def test_ref_inestable_flags_windows_where_the_reference_leg_collapses(monkeypat
     log_prices = pd.DataFrame({"A": 0.0, "B": 0.0}, index=index)
     table = rolling_eigenvector(log_prices, window=10, step=5)
 
-    assert table["ref_inestable"].tolist() == [False, True, False]
-    assert table["A"].tolist() == pytest.approx([1.0, 1.0, 1.0])
-    assert table["B"].tolist() == pytest.approx([-1.0, -50.0, -1.25])
+    esperado_a = [2 / 3, 0.625, 0.625]
+    esperado_b = [-1 / 3, -0.375, -0.375]
+    assert table["A"].tolist() == pytest.approx(esperado_a)
+    assert table["B"].tolist() == pytest.approx(esperado_b)
 
 
 def test_load_group_log_prices_restricts_to_train_when_asked(tmp_path, monkeypatch):
@@ -111,6 +111,29 @@ def test_load_group_log_prices_restricts_to_train_when_asked(tmp_path, monkeypat
     assert len(log_prices_train) == train_end
     assert len(log_prices_todo) == len(prices)
     assert tickers == ["A", "B"]
+
+
+def test_run_writes_tickers_only_in_eigvec_movil_and_trace_stat_in_diagnostico(tmp_path, monkeypatch):
+    log_prices = make_cointegrated_log_prices(n=300)
+    prices = np.exp(log_prices)
+    prices_path = tmp_path / "prices.csv"
+    prices.to_csv(prices_path)
+
+    artifacts_dir = tmp_path / "artifacts"
+    artifacts_dir.mkdir()
+    (artifacts_dir / "seleccion.json").write_text(json.dumps({"tickers": ["A", "B"]}))
+
+    monkeypatch.setattr(eigvec_movil, "PRICES_FILE", prices_path)
+    monkeypatch.setattr(eigvec_movil, "ARTIFACTS_DIR", artifacts_dir)
+
+    run(hasta="todo")
+
+    movil = pd.read_csv(artifacts_dir / "eigvec_movil.csv")
+    diagnostico = pd.read_csv(artifacts_dir / "eigvec_diagnostico.csv")
+
+    assert list(movil.columns) == ["date", "A", "B"]
+    assert list(diagnostico.columns) == ["date", "trace_stat"]
+    assert len(movil) == len(diagnostico)
 
 
 def test_main_refuses_to_run_hasta_todo():
