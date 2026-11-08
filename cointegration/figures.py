@@ -18,21 +18,6 @@ from dashboard.theme import asset_colors, palette
 FIGURES_DIR = DOCS_DIR / "figures"
 
 
-def _unstable_spans(index, unstable):
-    """Rangos [inicio, fin] de fechas consecutivas con ref_inestable=True, para sombrear."""
-    spans = []
-    start = None
-    for position, flag in enumerate(unstable):
-        if flag and start is None:
-            start = position
-        elif not flag and start is not None:
-            spans.append((index[start], index[position - 1]))
-            start = None
-    if start is not None:
-        spans.append((index[start], index[-1]))
-    return spans
-
-
 def plot_precios(selection, mode="light"):
     """Figura 1: precios del grupo normalizados a 100 al inicio, con los cortes de seleccion.json."""
     colors = palette(mode)
@@ -62,9 +47,8 @@ def plot_precios(selection, mode="light"):
 def plot_eigenvector(selection, mode="light"):
     """Figura 4: pesos normalizados del primer eigenvector por ventana, una linea por activo.
 
-    Las ventanas con ref_inestable=True (pata de referencia con menos del 5% del peso maximo
-    de su ventana) se marcan con una banda sombreada, porque dividir por esa pata ahi es
-    numericamente inestable.
+    Los pesos estan normalizados por norma L1 (la suma de los |pesos| de cada ventana es 1),
+    asi que cada uno queda entre -1 y 1 por construccion.
     """
     colors = palette(mode)
     table = pd.read_csv(ARTIFACTS_DIR / "eigvec_movil.csv", index_col="date", parse_dates=True)
@@ -74,16 +58,10 @@ def plot_eigenvector(selection, mode="light"):
         axis.plot(table.index, table[ticker], linewidth=1.2, label=ticker, color=color)
     axis.axhline(0, color=colors["baseline"], linewidth=0.8)
 
-    spans = _unstable_spans(table.index, table["ref_inestable"].to_numpy())
-    for i, (start, end) in enumerate(spans):
-        axis.axvspan(
-            start, end, color=colors["muted"], alpha=0.25,
-            label="Pata de referencia inestable" if i == 0 else None,
-        )
-
+    axis.set_ylim(-1.0, 1.0)
     axis.set_title("Figura 4. Evolución del primer eigenvector de Johansen (ventana móvil)")
     axis.set_xlabel("Fecha")
-    axis.set_ylabel("Peso normalizado")
+    axis.set_ylabel("Peso normalizado (norma L1)")
     axis.legend(ncol=4, fontsize=9)
     figure.tight_layout()
     figure.savefig(FIGURES_DIR / "fig4_eigenvector.png", dpi=160)
