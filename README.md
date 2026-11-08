@@ -23,7 +23,23 @@ Estrategia de arbitraje estadístico sobre un portafolio de 6 utilities eléctri
 5. **Regla y tamaño de posición.** Se entra si z_in < abs(z) < z_stop y se sale si abs(z) < z_out, si se activa el stop o si se llega a la tenencia máxima. Se usa 80% del capital, repartido en proporción a abs(β̂_t).
 6. **Backtest.** Comisión de 0.125% por pata y operación, y préstamo de 0.25% anual sobre los cortos. Partición cronológica 60/20/20, con umbrales elegidos solo en entrenamiento.
 
-PENDIENTE: grupo elegido, resultados principales por partición y respuesta a "¿la relación es estructural o un artefacto?".
+**Grupo elegido:** AEP, XEL, ED, EXC, WEC y ES, con AEP como pata normalizada. Se eligió solo con entrenamiento, entre 210 grupos de 6 de 10 utilities (1,576 grupos evaluados en total contando la exploración).
+
+**Umbrales congelados** (`artifacts/theta.json`, elegidos con el walk-forward de entrenamiento antes de correr prueba y validación): z_in 2.0, z_out 0.5, z_stop 3.0, h_max 27 días y banda de rebalanceo de 0.75%.
+
+**Resultados de la corrida única** (capital inicial de 1,000,000 USD, con costos):
+
+| | Entrenamiento | Prueba | Validación |
+|---|---|---|---|
+| Sharpe | 0.59 | 0.32 | −0.88 |
+| Retorno total | 6.4% | 1.0% | −3.6% |
+| Drawdown máximo | 2.2% | 1.0% | 4.0% |
+| Operaciones | 28 | 6 | 6 |
+| Comisiones (USD) | 58,466 | 13,097 | 12,773 |
+
+En validación, 5 de las 6 operaciones cerraron por stop. Las comisiones se comen cerca de la mitad del P&L bruto en entrenamiento.
+
+PENDIENTE: respuesta a "¿la relación es estructural o un artefacto?" con el diagnóstico por partición.
 
 ## Instalación
 Probado con Python 3.12. PENDIENTE: confirmar en las 3 compus.
@@ -35,7 +51,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Los precios están congelados en `data/raw/prices.csv`. `python main.py` no descarga nada.
+Los precios están congelados en `data/raw/prices_utilities.csv` (las 10 utilities, de 2014-01-02 a 2026-10-28). `python main.py` no descarga nada.
 
 ## Reproducir los resultados
 ```bash
@@ -43,10 +59,27 @@ python main.py          # pipeline completo; escribe artifacts/
 python main.py --quick  # corrida rápida que no sobrescribe artifacts/ ni docs/
 pytest                  # las 4 pruebas obligatorias y las unitarias
 ```
-PENDIENTE: duración de la corrida completa y lista de lo que escribe en `artifacts/`.
+`python main.py` tarda unos 3 segundos. Lee lo que ya está congelado (`seleccion.json`, `filtros.json` y `theta.json`) y escribe en `artifacts/`:
+- `precios.csv`, `senales.csv`, `pesos.csv`, `ganancias.csv` y `varianzas.csv`: la vista técnica;
+- `equity.csv`, `operaciones.csv` y `metricas.json`: el backtest y las métricas por partición;
+- `vecm.json`: α, βᵀα y la vida media del VECM en entrenamiento.
+
+Cada parámetro congelado tiene su propio comando. Ya se corrieron en este orden y sus salidas están en el repo:
+
+| Paso | Comando | Escribe |
+|---|---|---|
+| 1. Selección del grupo (solo entrenamiento) | `python -m cointegration.seleccion` | `seleccion.json`, `seleccion_grupos.csv` |
+| 2. Parámetros de los filtros (solo entrenamiento) | `python -m kalman.tuning` | `filtros.json`, `filtros_malla.csv` |
+| 3. Walk-forward de umbrales (solo entrenamiento) | `python -m backtest.walk_forward` | `theta_busqueda.csv` |
+| 4. Congelar theta (una sola vez) | `python -m strategy.theta` | `theta.json` |
+| 5. Pipeline y backtest | `python main.py` | ver arriba |
+| 6. Johansen móvil en toda la muestra | `python -m cointegration.eigvec_movil --hasta todo` | `eigvec_movil.csv` |
+| 7. Figuras y dashboard estático | `python -m cointegration.figures`, `python -m kalman.figures`, `python -m dashboard.export` | `docs/` |
+
+`python -m strategy.theta` se niega a sobrescribir `theta.json`, y el paso 6 se niega a correr sin él.
 
 ## Semilla aleatoria
-`SEED = 42`, definida en `config.py`. PENDIENTE: lista de los lugares donde se usa.
+`SEED = 42`, definida en `config.py`. `main.py` la fija al arrancar (`set_seed`), y `kalman/simulation.py` la usa para los datos simulados de la prueba 4. El resto del pipeline es determinista: no tiene ningún paso aleatorio.
 
 ## Dashboard
 ```bash
