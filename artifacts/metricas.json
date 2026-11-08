@@ -1,0 +1,23 @@
+{
+  "train": {
+    "sharpe": 0.5477907653077738,
+    "sortino": 0.882764900286079,
+    "calmar": 0.32297900642630906,
+    "max_drawdown": 0.023398194348980383,
+    "win_rate": 0.7857142857142857,
+    "profit_factor": 2.2401859773518638,
+    "retorno_total": 0.059513419681337165,
+    "n_operaciones": 28,
+    "pnl_bruto": 121507.4420995946,
+    "comisiones": 60530.979070030284,
+    "prestamo": 1463.0433482283156,
+    "pnl_neto": 59513.41968133599,
+    "max_drawdown_inicio": "2019-06-04T00:00:00",
+    "max_drawdown_fin": "2020-03-18T00:00:00",
+    "retorno_anualizado": 0.007557125563003364,
+    "volatilidad_anualizada": 0.013920529848558509,
+    "pct_comisiones": 0.49816684496094943,
+    "pct_prestamo": 0.012040771519403064,
+    "notas": {}
+  }
+}
