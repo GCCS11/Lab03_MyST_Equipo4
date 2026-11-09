@@ -106,7 +106,7 @@ def technical_view(artifacts, splits, mode):
 def main():
     """Page layout: header, one filter row, then the chosen view."""
     artifacts = cached_artifacts(str(artifacts_dir()))
-    mode = st.context.theme.type or "light"
+    mode = "dark"  # el CSS de style.py pinta el fondo azul marino siempre, asi que las graficas van en oscuro
     selection = artifacts["seleccion"] or {}
 
     st.markdown(GLOBAL_CSS, unsafe_allow_html=True)

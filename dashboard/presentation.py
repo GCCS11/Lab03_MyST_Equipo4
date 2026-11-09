@@ -101,11 +101,13 @@ def funnel_figure(registry, mode):
     colors = palette(mode)
     stages = funnel_counts(registry)
     fig = go.Figure(go.Funnel(
-        y=[name for name, _ in stages], x=[count for _, count in stages], textinfo="value+percent initial",
+        y=[name for name, _ in stages], x=[count for _, count in stages], textinfo="value",
         marker={"color": [colors["series"][0]] * (len(stages) - 1) + [colors["series"][2]]},
         connector={"line": {"color": colors["baseline"]}},
     ))
-    return figures._style(fig, mode, "Embudo de selección, solo con entrenamiento")
+    figures._style(fig, mode, "Embudo de selección, solo con entrenamiento (número de grupos)")
+    fig.update_layout(margin={"l": 170})
+    return fig
 
 
 def theta_figure(search, theta, mode):
@@ -364,7 +366,7 @@ def presentation_view(artifacts, extras, mode):
     total = len(steps)
     st.markdown(CSS, unsafe_allow_html=True)
     st.session_state.setdefault("paso", 1)
-    nav_prev, nav_pick, nav_next = st.columns([1, 8, 1])
+    nav_prev, nav_pick, nav_next = st.columns([1.4, 7.2, 1.4])
     nav_prev.button("◀ Anterior", on_click=_go, args=(-1, total), use_container_width=True, key="anterior")
     nav_next.button("Siguiente ▶", on_click=_go, args=(1, total), use_container_width=True, key="siguiente")
     nav_pick.segmented_control("Paso", list(range(1, total + 1)), key="paso", label_visibility="collapsed",
