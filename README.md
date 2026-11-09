@@ -2,7 +2,7 @@
 
 Microestructura y Sistemas de Trading, ITESO, otoño 2026. Laboratorio 03.
 
-> Esqueleto del 4-nov. Las partes marcadas **PENDIENTE** se completan conforme se fusionen los módulos.
+**Reporte:** `docs/reporte.pdf`. **Dashboard estático:** `docs/dashboard.html`.
 
 ## Integrantes
 | Integrante | GitHub | Responsabilidad |
@@ -12,7 +12,7 @@ Microestructura y Sistemas de Trading, ITESO, otoño 2026. Laboratorio 03.
 | Ian Carlo Escalante Martínez | ianmartinez01 | Filtros de Kalman, formulación de Powell y reporte |
 
 ## Nivel de alcance
-**Un grupo de 6 activos** (2 × n, con n = 3 integrantes), **sin Risk Parity**. No se implementan la sección 3.7, la figura 9 ni la parte de nivel B de la prueba 4. PENDIENTE: confirmar con el profesor el nombre del nivel.
+**Un grupo de 6 activos** (2 × n, con n = 3 integrantes), **sin Risk Parity**. No se implementan la sección 3.7, la figura 9 ni la parte de nivel B de la prueba 4. El enunciado no define los niveles; este es el alcance que declaramos.
 
 ## Descripción
 Estrategia de arbitraje estadístico sobre un portafolio de 6 utilities eléctricas reguladas de EE. UU., con datos diarios de 2014 a 2026. El flujo es:
@@ -39,10 +39,23 @@ Estrategia de arbitraje estadístico sobre un portafolio de 6 utilities eléctri
 
 En validación, 5 de las 6 operaciones cerraron por stop. Las comisiones se comen cerca de la mitad del P&L bruto en entrenamiento.
 
-PENDIENTE: respuesta a "¿la relación es estructural o un artefacto?" con el diagnóstico por partición.
+**¿La relación es estructural o un artefacto?** Ninguna de las dos en forma pura. Es una relación real pero que depende del periodo, y su selección está inflada por las pruebas múltiples. El diagnóstico usa el vector de entrenamiento fijo (`python -m cointegration.diagnostico`):
+
+| | Entrenamiento | Prueba | Validación |
+|---|---|---|---|
+| ADF del spread (p) | 0.000 | 0.27 | 0.36 |
+| Vida media | 8.9 días | 46 días | 64 días |
+| Ventanas de 2 años con relación de Johansen | 58% | 20% | 3% |
+| Volatilidad del spread | 0.021 | 0.043 | 0.076 |
+
+- **Prueba anidada.** Repetimos la selección dentro de entrenamiento (60/20/20 interno). Solo 3 de 75 candidatos siguen estacionarios en el test interno, lo mismo que daría el azar. Nuestro grupo se rompe ahí y vuelve en la validación interna.
+- **Quién rompe la relación.** AEP explica la mayor parte del desplazamiento del spread después de 2021, y es la pata que el VECM dice que no corrige.
+- **Qué haríamos.** No cambiar de grupo mirando prueba. Volveríamos a probar la relación de forma causal y apagaríamos la estrategia cuando se cae.
+
+El detalle está en `docs/reporte.pdf`, sección de estrategia.
 
 ## Instalación
-Probado con Python 3.12. PENDIENTE: confirmar en las 3 compus.
+Probado con Python 3.12.10 en Windows 11, desde un clon limpio con un entorno nuevo (8-nov).
 
 ```bash
 python -m venv .venv
@@ -74,9 +87,10 @@ Cada parámetro congelado tiene su propio comando. Ya se corrieron en este orden
 | 4. Congelar theta (una sola vez) | `python -m strategy.theta` | `theta.json` |
 | 5. Pipeline y backtest | `python main.py` | ver arriba |
 | 6. Johansen móvil en toda la muestra | `python -m cointegration.eigvec_movil --hasta todo` | `eigvec_movil.csv` |
-| 7. Figuras y dashboard estático | `python -m cointegration.figures`, `python -m kalman.figures`, `python -m strategy.figures`, `python -m dashboard.export` | `docs/` |
+| 7. Diagnóstico por partición y prueba anidada | `python -m cointegration.diagnostico` | `diagnostico_particiones.csv`, `prueba_anidada.json` |
+| 8. Figuras y dashboard estático | `python -m cointegration.figures`, `python -m kalman.figures --completo`, `python -m strategy.figures`, `python -m performance.figures`, `python -m dashboard.export` | `docs/` |
 
-`python -m strategy.theta` se niega a sobrescribir `theta.json`, y el paso 6 se niega a correr sin él.
+`python -m strategy.theta` se niega a sobrescribir `theta.json`, y los pasos 6 y 7 se niegan a correr sin él, porque leen prueba y validación.
 
 ## Semilla aleatoria
 `SEED = 42`, definida en `config.py`. `main.py` la fija al arrancar (`set_seed`), y `kalman/simulation.py` la usa para los datos simulados de la prueba 4. El resto del pipeline es determinista: no tiene ningún paso aleatorio.
@@ -135,13 +149,20 @@ dashboard/app.py   dashboard en Streamlit
 artifacts/         salidas del backtest que lee el dashboard
 project_management/ charter, sprints y postmortem
 tests/             pruebas con pytest
-docs/              reporte.pdf, Powell y guía del dashboard
+docs/              reporte.pdf (y sus secciones en .md), Powell, figuras y dashboard.html
 ```
 
 ## Uso de asistencia de IA
-PENDIENTE: cada integrante describe aquí con exactitud dónde usó IA.
+Cada integrante describe aquí con exactitud dónde usó IA.
 
-- **JP:** Claude (Anthropic) para revisar el enunciado y las diapositivas, comparar los planes del equipo, redactar el charter, los sprints y este README, y escribir un primer borrador de `strategy/` y sus pruebas. JP las revisó, las ejecutó y responde por cada línea.
+- **JP:** Claude (Anthropic). Lo usó para:
+  - revisar el enunciado y las diapositivas, y comparar los planes del equipo;
+  - redactar el charter, los sprints, el postmortem y este README;
+  - escribir un primer borrador de `strategy/` y sus pruebas;
+  - conectar el motor y las métricas en `main.py`, la regla para congelar theta y las figuras 2 y 6;
+  - escribir `cointegration/diagnostico.py` y redactar las secciones `docs/reporte_estrategia.md` y `docs/reporte_datos.md`, y armar el PDF.
+
+  JP revisó y ejecutó cada parte, y responde por cada línea.
 - **Gian:** PENDIENTE.
 - **Ian:** PENDIENTE.
 

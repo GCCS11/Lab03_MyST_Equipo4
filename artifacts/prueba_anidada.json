@@ -1,0 +1,49 @@
+{
+  "cortes_internos": {
+    "train": [
+      "2014-01-02",
+      "2018-08-10"
+    ],
+    "test": [
+      "2018-08-13",
+      "2020-02-26"
+    ],
+    "validation": [
+      "2020-02-27",
+      "2021-09-08"
+    ]
+  },
+  "grupos": 210,
+  "candidatos_train_interno": 75,
+  "ganador_interno": "DUK+AEP+XEL+ED+NEE+ES",
+  "ganador_interno_estabilidad": 0.8333333333333334,
+  "ganador_interno_fuera_de_muestra": {
+    "test": {
+      "adf_p": 0.11605190424584683,
+      "vida_media": 28.130352405180442,
+      "volatilidad": 0.03187454290419221
+    },
+    "validation": {
+      "adf_p": 0.057333452823331264,
+      "vida_media": 7.98829957035506,
+      "volatilidad": 0.03785856870083121
+    }
+  },
+  "candidatos_estacionarios": {
+    "test": 3,
+    "validation": 39
+  },
+  "grupo_elegido_es_candidato_interno": true,
+  "grupo_elegido_fuera_de_muestra": {
+    "test": {
+      "adf_p": 0.259435913187224,
+      "vida_media": 40.72158476107875,
+      "volatilidad": 0.02511626952888546
+    },
+    "validation": {
+      "adf_p": 0.0005793850421550513,
+      "vida_media": 5.411036650320646,
+      "volatilidad": 0.02284549306906984
+    }
+  }
+}
