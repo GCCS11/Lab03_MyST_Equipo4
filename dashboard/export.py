@@ -5,14 +5,18 @@ Run from the repo root: python -m dashboard.export
 from pathlib import Path
 
 from dashboard import figures
-from dashboard.data import load_artifacts
+from dashboard.data import artifacts_dir, load_artifacts
+from dashboard.presentation import build_steps, load_extras
 from dashboard.theme import SPLIT_LABELS
 
 DOCS_FILE = Path(__file__).resolve().parents[1] / "docs" / "dashboard.html"
 
 
-def export_html(artifacts, path=DOCS_FILE, mode="light"):
-    """Write every chart of both views and the metrics table to one self-contained HTML file."""
+def export_html(artifacts, path=DOCS_FILE, mode="light", extras=None):
+    """Write every chart of both views and the metrics table to one self-contained HTML file.
+
+    With `extras` (presentation.load_extras) it also writes the 10 steps of the presentation.
+    """
     splits = list(SPLIT_LABELS)
     sections = ["<h2>Vista ejecutiva</h2>"]
     if artifacts["metricas"]:
@@ -28,6 +32,15 @@ def export_html(artifacts, path=DOCS_FILE, mode="light"):
                 continue
             sections.append(panel.figure.to_html(full_html=False, include_plotlyjs=include_js))
             include_js = False
+
+    if extras is not None:
+        sections.append("<h2>Presentación</h2>")
+        for number, step in enumerate(build_steps(artifacts, extras, mode), start=1):
+            sections.append(f"<h3>{number}. {step['titulo']} <small>(expone {step['quien']})</small></h3>")
+            sections.append("<p>" + " · ".join(f"<b>{label}:</b> {value}" for label, value, _ in step["cifras"]) + "</p>")
+            if step["figura"] is not None:
+                sections.append(step["figura"].to_html(full_html=False, include_plotlyjs=include_js))
+                include_js = False
 
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -48,4 +61,4 @@ def export_html(artifacts, path=DOCS_FILE, mode="light"):
 
 
 if __name__ == "__main__":
-    print(f"Escrito {export_html(load_artifacts())}")
+    print(f"Escrito {export_html(load_artifacts(), extras=load_extras(artifacts_dir()))}")

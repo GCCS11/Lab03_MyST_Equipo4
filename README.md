@@ -108,8 +108,14 @@ python -m dashboard.export   # escribe docs/dashboard.html
 
 ### Guía de uso
 **Controles (fila de arriba).** Aplican a todas las gráficas y a la bitácora.
-- **Vista:** cambia entre la vista ejecutiva y la técnica.
-- **Particiones:** elige qué tramos mostrar: entrenamiento, prueba o validación.
+- **Vista:** cambia entre la presentación, la vista ejecutiva y la técnica.
+- **Particiones:** elige qué tramos mostrar: entrenamiento, prueba o validación. No aparece en la presentación, que siempre muestra la muestra completa.
+
+**Presentación.** Es el guion de la exposición en 10 pasos.
+- Se avanza con "Anterior" y "Siguiente", o con los números de arriba.
+- Cada paso tiene un título que dice la conclusión, quién expone, sus cifras clave y una gráfica.
+- Las notas del expositor están cerradas, para no leerlas en pantalla.
+- El código está en `dashboard/presentation.py`, y lee también `seleccion_grupos.csv`, `filtros.json`, `vecm.json`, `theta_busqueda.csv`, `diagnostico_particiones.csv` y `prueba_anidada.json`.
 
 En cada gráfica:
 - Arrastra para hacer zoom; doble clic para regresar.

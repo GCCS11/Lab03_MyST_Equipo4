@@ -1,7 +1,8 @@
 """Lab 03 dashboard. Run from the repo root: streamlit run dashboard/app.py
 
 It only reads the files in artifacts/ (written by python main.py) and never reruns the backtest.
-Two views: an executive one for a portfolio manager and a technical one for a quant researcher.
+Three views: the presentation script in 10 steps, an executive one for a portfolio manager and a
+technical one for a quant researcher.
 """
 import sys
 from pathlib import Path
@@ -11,6 +12,7 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from dashboard import figures  # noqa: E402
+from dashboard.presentation import load_extras, presentation_view  # noqa: E402
 from dashboard.data import artifacts_dir, filter_trades, load_artifacts, missing  # noqa: E402
 from dashboard.theme import SPLIT_LABELS  # noqa: E402
 
@@ -27,6 +29,12 @@ st.set_page_config(page_title="Lab 03 · Arbitraje estadístico", layout="wide")
 def cached_artifacts(directory):
     """Artifacts of the folder, read once per session."""
     return load_artifacts(directory)
+
+
+@st.cache_data
+def cached_extras(directory):
+    """Artifacts that only the presentation view reads."""
+    return load_extras(directory)
 
 
 def show(panel):
@@ -112,7 +120,10 @@ def main():
         st.caption(f"Sin datos todavía: {', '.join(absent)}.")
 
     view_col, split_col = st.columns([1, 2])
-    view = view_col.radio("Vista", ["Ejecutiva", "Técnica"], horizontal=True, key="vista")
+    view = view_col.radio("Vista", ["Presentación", "Ejecutiva", "Técnica"], horizontal=True, key="vista")
+    if view == "Presentación":
+        presentation_view(artifacts, cached_extras(str(artifacts_dir())), mode)
+        return
     splits = split_col.multiselect(
         "Particiones", list(SPLIT_LABELS), default=list(SPLIT_LABELS), format_func=SPLIT_LABELS.get, key="particiones",
     )
