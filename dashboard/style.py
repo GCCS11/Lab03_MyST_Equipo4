@@ -22,6 +22,9 @@ h1{font-weight:600!important;letter-spacing:-.02em}
 [data-testid="stDataFrame"]{background:var(--glass);border:1px solid var(--line);border-radius:18px;
   box-shadow:0 14px 44px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05)}
 [data-testid="stPlotlyChart"]{padding:12px 14px}
+/* the frame makes the chart a few px taller than its slot; without this the slot becomes a tiny
+   scroll box that swallows the mouse wheel and the page stops scrolling over a chart */
+[data-testid="stElementContainer"]:has([data-testid="stPlotlyChart"]){overflow:visible!important}
 [data-testid="stMetricValue"]{font-size:1.9rem;font-variant-numeric:tabular-nums}
 [data-testid="stMetricValue"] div{overflow:visible!important;text-overflow:clip!important}
 .stButton button,[data-testid="stBaseButton-secondary"]{border-radius:12px;background:var(--glass);

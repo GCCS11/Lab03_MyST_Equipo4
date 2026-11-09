@@ -43,7 +43,7 @@ def show(panel):
     if panel.figure is None:
         st.info(f"Falta `{panel.source}` en artifacts/. Corre `python main.py`.")
         return
-    st.plotly_chart(panel.figure, theme=None, key=panel.key)
+    st.plotly_chart(panel.figure, theme=None, key=panel.key, config={"scrollZoom": False})
     with st.expander("Ver datos"):
         st.dataframe(panel.data)
 

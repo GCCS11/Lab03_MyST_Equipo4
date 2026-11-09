@@ -387,7 +387,7 @@ def presentation_view(artifacts, extras, mode):
     if step["figura"] is None:
         st.info(f"Falta `{step['fuente']}` en artifacts/. Corre `python main.py`.")
     else:
-        st.plotly_chart(step["figura"], theme=None, key=f"paso_{index}")
+        st.plotly_chart(step["figura"], theme=None, key=f"paso_{index}", config={"scrollZoom": False})
     with st.expander("Notas del expositor"):
         for note in step["notas"]:
             st.markdown(f"- {note}")
