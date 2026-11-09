@@ -164,6 +164,12 @@ Cada integrante describe aquí con exactitud dónde usó IA.
 
   JP revisó y ejecutó cada parte, y responde por cada línea.
 - **Gian:** PENDIENTE.
-- **Ian:** PENDIENTE.
+- **Ian:** Claude Code (Anthropic). Lo usó para:
+  - leer el enunciado y las láminas S11 a S14, y comparar sectores en la exploración inicial;
+  - escribir los filtros 1 y 2 (`kalman/`), sus pruebas (pruebas 2 y 4) y los datos sintéticos;
+  - escribir la selección del grupo (`cointegration/seleccion.py`) y el walk-forward que congela `filtros.json` (`kalman/tuning.py`);
+  - redactar `docs/powell.md` y `docs/reporte_filtros.md`, generar las figuras 3 y 5, revisar el PR de JP y armar el PDF del reporte.
+
+  Ian revisó y ejecutó cada parte, y responde por cada línea.
 
 Cada integrante es responsable de todo el código entregado.

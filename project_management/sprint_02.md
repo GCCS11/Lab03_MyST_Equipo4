@@ -48,15 +48,15 @@ Las propuestas del 4-nov:
 ### Ian: filtros de Kalman y Powell
 | ID | Tarea | Meta | Estado |
 |---|---|---|---|
-| I0 | Filtros 1 y 2 v1 con pruebas sintéticas; comparación de 5 sectores | 4-nov | En curso, en una rama local sin subir |
-| I1 | Subir `feature/ian-kalman` en commits por tema y abrir el PR | mié 4 | Pendiente |
-| I2 | Ajustar los filtros: log-precios, fechas fijas, grupo de `seleccion.json`, inicialización y burn-in | jue 5 | Pendiente |
-| I3 | Elegir Q, R, φ y λ en entrenamiento; `artifacts/filtros.json` | vie 6 | Pendiente |
-| I4 | Salidas con las columnas acordadas: pesos, ganancias, varianzas, innovaciones y z | jue 5 | Pendiente |
-| I5 | Prueba 2 (normalización) y prueba 4 (filtro) | vie 6 | Pendiente |
-| I6 | Powell en `docs/powell.md`: Filtro 1, Filtro 2 y sistema completo, con ejemplos numéricos | sáb 7 | Pendiente |
-| I7 | Figuras 3 y 5 | sáb 7 | Pendiente |
-| I8 | Armar `docs/reporte.pdf` | dom 8, 18:00 | Pendiente |
+| I0 | Filtros 1 y 2 v1 con pruebas sintéticas; comparación de 5 sectores | 4-nov | Listo (exploración de sectores del 2-nov) |
+| I1 | Subir `feature/ian-kalman` en commits por tema y abrir el PR | mié 4 | Listo: PR #3, fusionado el 7-nov |
+| I2 | Ajustar los filtros: log-precios, fechas fijas, grupo de `seleccion.json`, inicialización y burn-in | jue 5 | Listo: PR #3, con el grupo del PR #5 |
+| I3 | Elegir Q, R, φ y λ en entrenamiento; `artifacts/filtros.json` | vie 6 | Listo: `artifacts/filtros.json` (PR #3) |
+| I4 | Salidas con las columnas acordadas: pesos, ganancias, varianzas, innovaciones y z | jue 5 | Listo: PR #3 |
+| I5 | Prueba 2 (normalización) y prueba 4 (filtro) | vie 6 | Listo: PR #3; la parte del Johansen móvil corre desde que entró G4 |
+| I6 | Powell en `docs/powell.md`: Filtro 1, Filtro 2 y sistema completo, con ejemplos numéricos | sáb 7 | Listo: `docs/powell.md` (PR #3) |
+| I7 | Figuras 3 y 5 | sáb 7 | Listo: PR #3; regeneradas con toda la muestra por JP |
+| I8 | Armar `docs/reporte.pdf` | dom 8, 18:00 | Listo: PR de cierre de Ian, con resultados de prueba y validación en la sección de filtros |
 
 ### JP: estrategia, pipeline, dashboard y gestión
 | ID | Tarea | Meta | Estado |

@@ -37,4 +37,12 @@ Escrito el domingo 8-nov-2026, día de la entrega. Lo redactó JP con lo que que
 5. Hacer las preguntas al profesor por escrito el primer día y registrar la respuesta en el charter.
 
 ## Comentarios de Gian e Ian
-(Agregar aquí.)
+
+**Ian.**
+- **Qué salió a tiempo y qué no.** Los filtros, `filtros.json`, Powell y mi sección quedaron antes de la corrida única. Subí mi primer commit hasta el miércoles 4, y el reporte final lo terminé el domingo, después de la corrida.
+- **Cuello de botella técnico.** Elegir Q. La verosimilitud siempre premiaba una Q más alta, y con eso los pesos perseguían el spread y el ADF salía estacionario de forma mecánica. Tuve que poner la vida media como restricción y elegir con walk-forward. Además, `P0 = Q` dejaba la varianza sin asentarse durante años y tuve que calibrarla con una pasada previa.
+- **Cuello de botella organizacional.** Para no esperar, escribí la selección del grupo, que era tarea de Gian, y él la revisó después. Funcionó para destrabar, pero rompió la regla de no tocar la carpeta de otro y generó trabajo doble.
+- **Lo que haría distinto en producción.** No mirar prueba ni validación durante la exploración: yo lo hice el 2 de noviembre al comparar sectores. Definir antes la regla para elegir Q. Agregar desde el inicio un monitor de la varianza de las innovaciones que apague la estrategia; en validación llegó a 1.55 y habría avisado del cambio de nivel.
+- **Riesgos del registro.** Se materializó el #1: la relación se perdió fuera de muestra, y los pesos dinámicos no la rescataron porque la Q que conserva el spread casi no los mueve. El #3, la divergencia de los filtros, lo contuvimos en entrenamiento, pero fuera de muestra el Filtro 1 quedó sobreconfiado. El #4, el look-ahead, quedó cubierto en el código con el z previo y la prueba 1.
+
+**Gian.** (Agregar aquí.)
