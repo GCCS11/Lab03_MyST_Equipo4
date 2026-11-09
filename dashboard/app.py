@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from dashboard import figures  # noqa: E402
 from dashboard.presentation import load_extras, presentation_view  # noqa: E402
 from dashboard.data import artifacts_dir, filter_trades, load_artifacts, missing  # noqa: E402
+from dashboard.style import GLOBAL_CSS, topbar  # noqa: E402
 from dashboard.theme import SPLIT_LABELS  # noqa: E402
 
 TRADE_COLUMNS = {
@@ -42,7 +43,7 @@ def show(panel):
     if panel.figure is None:
         st.info(f"Falta `{panel.source}` en artifacts/. Corre `python main.py`.")
         return
-    st.plotly_chart(panel.figure, theme=None, key=panel.key)
+    st.plotly_chart(panel.figure, theme=None, key=panel.key, config={"scrollZoom": False})
     with st.expander("Ver datos"):
         st.dataframe(panel.data)
 
@@ -56,8 +57,10 @@ def executive_view(artifacts, splits, mode):
             "Tarjeta de desempeño", options, index=len(options) - 1,
             format_func=SPLIT_LABELS.get, horizontal=True, key="tarjeta",
         )
-        for column, (label, value) in zip(st.columns(8), figures.kpis(metrics, card_split)):
-            column.metric(label, value, border=True)
+        cards = figures.kpis(metrics, card_split)
+        for row in (cards[:4], cards[4:]):
+            for column, (label, value) in zip(st.columns(4), row):
+                column.metric(label, value, border=True)
         with st.expander("Todas las particiones"):
             st.dataframe(figures.metrics_table(metrics))
 
@@ -103,15 +106,24 @@ def technical_view(artifacts, splits, mode):
 def main():
     """Page layout: header, one filter row, then the chosen view."""
     artifacts = cached_artifacts(str(artifacts_dir()))
-    mode = st.context.theme.type or "light"
+    mode = "dark"  # el CSS de style.py pinta el fondo azul marino siempre, asi que las graficas van en oscuro
     selection = artifacts["seleccion"] or {}
 
-    st.title("Arbitraje estadístico con cointegración y filtros de Kalman")
-    if selection:
-        st.caption(
-            f"Grupo: {', '.join(selection['tickers'])} · pata normalizada {selection['pata_normalizada']} · "
-            f"{selection['grupos_evaluados_total']:,} grupos evaluados · Lab 03 MyST, Equipo 4"
-        )
+    st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
+    view = st.sidebar.radio("Vista", ["Presentación", "Ejecutiva", "Técnica"], key="vista")
+    st.sidebar.caption("Lab 03 · MyST · Equipo 4")
+    st.sidebar.caption("Solo lee artifacts/; nunca vuelve a correr el backtest.")
+    st.markdown(topbar(
+        ["Lab 03 · Equipo 4", "Arbitraje estadístico", view],
+        [("θ congelado · 4557c17", "live"),
+         (f"{selection.get('grupos_evaluados_total', 0):,} grupos evaluados", ""),
+         (" · ".join(selection.get("tickers", [])) or "sin selección", "blue")],
+    ), unsafe_allow_html=True)
+    st.markdown(
+        "<div class='hero'><h1>Arbitraje estadístico</h1>"
+        "<p>Cointegración de 6 utilities, filtros de Kalman y una regla con θ congelado</p></div>",
+        unsafe_allow_html=True,
+    )
     absent = missing(artifacts)
     if len(absent) == len(artifacts):
         st.warning("No hay salidas del backtest en artifacts/. Corre `python main.py` primero.")
@@ -119,12 +131,10 @@ def main():
     if absent:
         st.caption(f"Sin datos todavía: {', '.join(absent)}.")
 
-    view_col, split_col = st.columns([1, 2])
-    view = view_col.radio("Vista", ["Presentación", "Ejecutiva", "Técnica"], horizontal=True, key="vista")
     if view == "Presentación":
         presentation_view(artifacts, cached_extras(str(artifacts_dir())), mode)
         return
-    splits = split_col.multiselect(
+    splits = st.multiselect(
         "Particiones", list(SPLIT_LABELS), default=list(SPLIT_LABELS), format_func=SPLIT_LABELS.get, key="particiones",
     )
     if not splits:

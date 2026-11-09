@@ -14,13 +14,14 @@ LIGHT = {
     "series": ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"],
 }
 
+# Dark mode sits on the navy glass panels of the app: transparent surface, cool inks.
 DARK = {
-    "surface": "#1a1a19",
-    "ink": "#f0efec",
-    "ink_secondary": "#c3c2b7",
-    "muted": "#898781",
-    "grid": "#2c2c2a",
-    "baseline": "#383835",
+    "surface": "rgba(0,0,0,0)",
+    "ink": "#eef2fb",
+    "ink_secondary": "#b8c3dc",
+    "muted": "#7d8bab",
+    "grid": "rgba(255,255,255,0.07)",
+    "baseline": "rgba(255,255,255,0.22)",
     "series": ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"],
 }
 

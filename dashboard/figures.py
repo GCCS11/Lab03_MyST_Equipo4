@@ -14,7 +14,7 @@ from scipy import stats
 from dashboard.data import select_splits, split_bounds
 from dashboard.theme import SPLIT_LABELS, asset_colors, palette
 
-FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif'
+FONT = 'Outfit, system-ui, -apple-system, "Segoe UI", sans-serif'
 Panel = namedtuple("Panel", ["key", "figure", "data", "source"])
 
 
@@ -35,13 +35,16 @@ def _style(fig, mode, title, y_title=None, height=380):
     fig.update_layout(
         title={"text": title, "x": 0, "xanchor": "left", "font": {"size": 15, "color": colors["ink"]}},
         height=height,
-        margin={"l": 64, "r": 24, "t": 64, "b": 40},
+        margin={"l": 88, "r": 24, "t": 64, "b": 40},
         paper_bgcolor=colors["surface"],
         plot_bgcolor=colors["surface"],
         font={"family": FONT, "size": 12, "color": colors["ink_secondary"]},
         hovermode="x unified",
         legend={"orientation": "h", "yanchor": "bottom", "y": 1.0, "xanchor": "right", "x": 1},
     )
+    if mode == "dark":
+        fig.update_layout(hoverlabel={"bgcolor": "#0d1a3a", "bordercolor": "rgba(255,255,255,0.18)",
+                                      "font": {"color": colors["ink"], "family": FONT}})
     fig.update_xaxes(showgrid=False, linecolor=colors["baseline"], ticks="outside", tickcolor=colors["baseline"])
     fig.update_yaxes(gridcolor=colors["grid"], zeroline=False, linecolor=colors["baseline"])
     if y_title:

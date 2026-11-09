@@ -107,8 +107,8 @@ python -m dashboard.export   # escribe docs/dashboard.html
 ```
 
 ### Guía de uso
-**Controles (fila de arriba).** Aplican a todas las gráficas y a la bitácora.
-- **Vista:** cambia entre la presentación, la vista ejecutiva y la técnica.
+**Controles.** La vista se elige en la barra lateral; las particiones, arriba de las gráficas. Aplican a todas las gráficas y a la bitácora.
+- **Vista (barra lateral):** cambia entre la presentación, la vista ejecutiva y la técnica. El tema es oscuro, con paneles de vidrio y entradas animadas que se apagan con movimiento reducido (`dashboard/style.py`).
 - **Particiones:** elige qué tramos mostrar: entrenamiento, prueba o validación. No aparece en la presentación, que siempre muestra la muestra completa.
 
 **Presentación.** Es el guion de la exposición en 10 pasos.
