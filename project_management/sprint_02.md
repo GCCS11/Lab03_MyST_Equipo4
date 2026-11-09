@@ -71,14 +71,14 @@ Las propuestas del 4-nov:
 | J8 | Una sola corrida de prueba y validación con θ congelado | vie 6, noche | Listo (sáb 7): Sharpe 0.59 en entrenamiento, 0.32 en prueba y −0.88 en validación |
 | J9 | Prueba 1 (causalidad) | sáb 7 | Listo (PR #4): pasa con datos reales en tres fechas de prueba y validación. En esta rama se omite hasta fusionar los PR #3 y #5 |
 | J10 | `dashboard/app.py` con vista ejecutiva y técnica; exportación y guía en `docs/` | sáb 7 | Listo (sáb 7, PR #12): corre con los artifacts reales y `docs/dashboard.html` está exportado. Opcional: pestaña "Exposición" |
-| J11 | Sección del reporte y figuras 2 y 6 | sáb 7 | En curso: figuras 2 y 6 listas (`strategy/figures.py`, PR #12); falta la sección del reporte |
-| J12 | README final con el uso de IA de los tres, y el postmortem | dom 8 | Pendiente |
+| J11 | Sección del reporte y figuras 2 y 6 | sáb 7 | Listo (dom 8): figuras 2 y 6 en el PR #12. Sección en `docs/reporte_estrategia.md`, con el diagnóstico por partición y la prueba anidada en `cointegration/diagnostico.py` |
+| J12 | README final con el uso de IA de los tres, y el postmortem | dom 8 | Listo en la parte de JP (dom 8): README sin pendientes salvo el uso de IA de Gian e Ian; `project_management/postmortem.md` |
 
 ### Todos
 | ID | Tarea | Meta | Estado |
 |---|---|---|---|
 | T1 | Preguntas al profe: prueba 4, "residual del VECM", fecha de exposición, cuarto entregable, grupo de Canvas | jue 5 | Pendiente |
-| T2 | Clon limpio en las 3 compus: `pip install`, `python main.py`, `pytest` y dashboard | sáb 7 | Pendiente |
+| T2 | Clon limpio en las 3 compus: `pip install`, `python main.py`, `pytest` y dashboard | sáb 7 | En curso: la compu de JP pasó el dom 8 con un entorno nuevo; faltan las de Gian e Ian |
 | T3 | Congelar a las 20:00, entregar en Canvas (Ian también) y ensayar la exposición de 10 minutos | dom 8 | Pendiente |
 
 ## Bloqueos y desviaciones
@@ -92,3 +92,8 @@ Las propuestas del 4-nov:
 - La prueba 3 fallaba en Windows por la ruta del golden-file. Se corrigió en el PR #12.
 - El Johansen móvil se volvió a correr sobre toda la muestra después de congelar theta; su candado ahora revisa que exista `theta.json`.
 - Validación pierde (−3.6%, 5 de 6 operaciones por stop). Va al reporte como resultado, no se ajusta nada con ella.
+
+**8-nov:**
+- Gian fusionó los PR #11, #12 y #14 y cerró su PR #13 (otro `main.py`), porque el #12 ya hacía lo mismo.
+- A las 19:30 no estaban `docs/reporte.pdf` ni las secciones de datos y estrategia. JP armó el PDF a partir de las secciones en Markdown de `docs/`. También redactó la sección del área de Gian (`docs/reporte_datos.md`), que Gian debe revisar.
+- Las figuras 3 y 5 se regeneraron con `python -m kalman.figures --completo`, ya con toda la muestra.
