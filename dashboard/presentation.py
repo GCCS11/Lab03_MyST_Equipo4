@@ -121,10 +121,11 @@ def theta_figure(search, theta, mode):
         x = float(summary.loc[chosen, "mean"])
         fig.add_vline(x=x, line={"color": colors["series"][2], "width": 3})
         fig.add_annotation(x=x, y=1, yref="paper", text=f"θ elegido ({x:.2f})", showarrow=False,
-                           xanchor="left", xshift=6, yanchor="top", font={"color": colors["series"][2], "size": 14})
+                           xanchor="right", xshift=-8, yanchor="top", font={"color": colors["series"][2], "size": 14})
     figures._style(fig, mode, f"Sharpe medio en 5 pliegues de entrenamiento ({len(summary)} combinaciones de θ)",
                    "Número de θ")
     fig.update_xaxes(title="Sharpe medio del walk-forward")
+    fig.update_layout(margin={"b": 70})
     return fig
 
 
