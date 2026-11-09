@@ -57,8 +57,10 @@ def executive_view(artifacts, splits, mode):
             "Tarjeta de desempeño", options, index=len(options) - 1,
             format_func=SPLIT_LABELS.get, horizontal=True, key="tarjeta",
         )
-        for column, (label, value) in zip(st.columns(8), figures.kpis(metrics, card_split)):
-            column.metric(label, value, border=True)
+        cards = figures.kpis(metrics, card_split)
+        for row in (cards[:4], cards[4:]):
+            for column, (label, value) in zip(st.columns(4), row):
+                column.metric(label, value, border=True)
         with st.expander("Todas las particiones"):
             st.dataframe(figures.metrics_table(metrics))
 
