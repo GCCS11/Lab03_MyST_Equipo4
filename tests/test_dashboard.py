@@ -156,3 +156,16 @@ def test_app_warns_without_artifacts(tmp_path, monkeypatch):
     app = AppTest.from_file(str(APP), default_timeout=60).run()
     assert not app.exception
     assert any("python main.py" in warning.value for warning in app.warning)
+
+
+def test_presentation_has_ten_steps_and_runs(tmp_path, monkeypatch):
+    from dashboard.presentation import build_steps, load_extras
+    directory = write_fake_artifacts(tmp_path)
+    steps = build_steps(load_artifacts(directory), load_extras(directory), "light")
+    assert len(steps) == 10 and all(step["titulo"] and step["quien"] for step in steps)
+    monkeypatch.setenv("LAB03_ARTIFACTS", str(directory))
+    app = AppTest.from_file(str(APP), default_timeout=60).run()
+    for number in (1, 5, 10):
+        app.session_state["paso"] = number
+        app.run()
+        assert not app.exception
