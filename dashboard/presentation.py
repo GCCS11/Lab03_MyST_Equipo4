@@ -23,14 +23,27 @@ HEIGHT = 520
 
 CSS = """
 <style>
-.step-chip{display:inline-block;padding:3px 12px;border-radius:999px;font-size:.85rem;
-  border:1px solid rgba(128,128,128,.35);margin-right:6px;opacity:.85}
-.step-title{font-size:2.1rem;font-weight:700;line-height:1.15;margin:.35rem 0 .9rem}
-.kpi{border:1px solid rgba(128,128,128,.25);border-left:5px solid var(--tone);border-radius:10px;
-  padding:10px 14px;height:100%}
-.kpi-label{font-size:.85rem;opacity:.75}
-.kpi-value{font-size:1.85rem;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.2}
-.kpi-pos{--tone:#1baf7a}.kpi-neg{--tone:#e34948}.kpi-mid{--tone:#eda100}.kpi-info{--tone:#2a78d6}
+.step-chip{display:inline-flex;align-items:center;padding:4px 12px;border-radius:999px;font-size:.82rem;
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);margin-right:6px;color:rgba(232,237,248,.8)}
+.step-chip.who{color:#fff;background:linear-gradient(180deg,#5b86ff,#3a5cf0);border-color:transparent;
+  box-shadow:0 0 16px rgba(79,125,255,.45)}
+.step-title{font-size:2.15rem;font-weight:600;letter-spacing:-.015em;line-height:1.15;margin:.5rem 0 1rem}
+.kpi{position:relative;overflow:hidden;border-radius:16px;padding:14px 16px 16px;height:100%;
+  background:linear-gradient(160deg,rgba(66,110,255,.22),rgba(20,38,110,.18) 60%,rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.1);box-shadow:0 12px 36px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.06)}
+.kpi::before{content:"";position:absolute;left:16px;right:16px;top:0;height:2px;border-radius:2px;
+  background:var(--tone);box-shadow:0 0 14px var(--tone)}
+.kpi-label{font-size:.85rem;color:rgba(232,237,248,.7);display:flex;align-items:center;gap:7px}
+.kpi-label::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--tone);box-shadow:0 0 8px var(--tone)}
+.kpi-value{font-size:1.9rem;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2;margin-top:6px;color:#f3f6fd}
+.kpi-pos{--tone:#2fd6a0}.kpi-neg{--tone:#ff5d6c}.kpi-mid{--tone:#ffc247}.kpi-info{--tone:#5b8cff}
+@media (prefers-reduced-motion:no-preference){
+  .step-title{animation:rise 1s cubic-bezier(.16,1,.3,1) both}
+  .kpi{animation:rise .95s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(120ms + var(--i,0)*90ms)}
+  .kpi::before{transform-origin:left;animation:grow 1.2s cubic-bezier(.16,1,.3,1) both;
+    animation-delay:calc(320ms + var(--i,0)*90ms)}
+  @keyframes rise{from{opacity:0;transform:translateY(14px);filter:blur(5px)}to{opacity:1;transform:none;filter:none}}
+  @keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}}
 </style>
 """
 
@@ -359,13 +372,13 @@ def presentation_view(artifacts, extras, mode):
     index = st.session_state.get("paso") or 1
     step = steps[index - 1]
     st.markdown(
-        f"<span class='step-chip'>Paso {index} de {total}</span><span class='step-chip'>Expone {step['quien']}</span>"
+        f"<span class='step-chip who'>Expone {step['quien']}</span><span class='step-chip'>Paso {index} de {total}</span>"
         f"<span class='step-chip'>≈ {step['tiempo']} min</span><div class='step-title'>{step['titulo']}</div>",
         unsafe_allow_html=True,
     )
     columns = st.columns(len(step["cifras"]))
-    for column, (label, value, tone) in zip(columns, step["cifras"]):
-        column.markdown(f"<div class='kpi kpi-{tone}'><div class='kpi-label'>{label}</div>"
+    for position, (column, (label, value, tone)) in enumerate(zip(columns, step["cifras"])):
+        column.markdown(f"<div class='kpi kpi-{tone}' style='--i:{position}'><div class='kpi-label'>{label}</div>"
                         f"<div class='kpi-value'>{value}</div></div>", unsafe_allow_html=True)
     st.write("")
     if step["figura"] is None:
